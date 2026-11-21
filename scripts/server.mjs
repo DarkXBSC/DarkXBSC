@@ -1,3 +1,4 @@
+import { launchMetadata } from "./launch-disclosure.mjs";
 import { hireAPI } from "./hire-api.mjs";
 import http from "node:http";
 import https from "node:https";
@@ -335,6 +336,7 @@ const server = http.createServer(async (req, res) => {
             const result = await xGiving.check(
               input.recipient,
               input.nomination,
+              input.disclosure,
             );
             if (!settlementActive()) {
               result.state = "VERIFIED";
@@ -349,6 +351,9 @@ const server = http.createServer(async (req, res) => {
           return json(res, 422, {
             error: [
               "NOMINATION_NOT_FOUND",
+              "INVALID_DISCLOSURE",
+              "PRIVATE_NOMINATION_REQUIRED",
+              "PRIVATE_RECIPIENT_IN_PUBLIC_CONTENT",
               "X_POOL_UNAVAILABLE",
               "X_POOL_CONVERSION_UNAVAILABLE",
               "INVALID_X_HANDLE",
@@ -714,16 +719,26 @@ const server = http.createServer(async (req, res) => {
             : raw.toString("ascii", 0, 4) === "RIFF" &&
               raw.toString("ascii", 8, 12) === "WEBP";
       if (!valid) return json(res, 400, { error: "INVALID_IMAGE_CONTENT" });
-      const creator = String(form.get("creator") || "");
-      if (!/^0x[\da-fA-F]{40}$/.test(creator))
-        return json(res, 400, { error: "INVALID_CREATOR" });
-      const metadata = {
-        creator,
-        description: String(form.get("description") || "").slice(0, 2000),
-        website: String(form.get("website") || "").slice(0, 300),
-        twitter: String(form.get("twitter") || "").slice(0, 300),
-        telegram: null,
-      };
+      let metadata;
+      try {
+        metadata = launchMetadata({
+          creator: form.get("creator"),
+          description: form.get("description"),
+          website: form.get("website"),
+          twitter: form.get("twitter"),
+          name: form.get("name"),
+          symbol: form.get("symbol"),
+          recipient: form.get("recipient"),
+          nomination: form.get("nomination"),
+          disclosure: form.get("disclosure") ? JSON.parse(String(form.get("disclosure"))) : undefined,
+        });
+      } catch (error) {
+        return json(res, 422, { error: [
+          "INVALID_CREATOR", "INVALID_DISCLOSURE", "INVALID_X_HANDLE",
+          "PRIVATE_RECIPIENT_IN_PUBLIC_CONTENT", "PRIVATE_NOMINATION_REQUIRED",
+          "DESCRIPTION_TOO_LONG",
+        ].includes(error.message) ? error.message : "INVALID_DISCLOSURE" });
+      }
       const upstream = new FormData();
       upstream.set(
         "operations",

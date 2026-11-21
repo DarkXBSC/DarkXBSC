@@ -30,7 +30,18 @@ export function payBeneficiary(
   return getAddress(binding.address);
 }
 
+export type BeneficiaryDisclosure = {
+  visibility: "private" | "public";
+  purpose: string;
+};
 export type RecipientCheck = {
+  recipient?: {
+    handle: string;
+    profile: string;
+    name?: string;
+    avatar?: string;
+  };
+  disclosure?: BeneficiaryDisclosure;
   state: string;
   input: string;
   ticket?: string;
@@ -42,6 +53,7 @@ export async function checkRecipient(
   input: string,
   route: "binance" | "x" = "binance",
   nomination?: string,
+  disclosure?: BeneficiaryDisclosure,
 ): Promise<RecipientCheck> {
   try {
     const r = await fetch(
@@ -51,8 +63,11 @@ export async function checkRecipient(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
           nomination && route === "x"
-            ? { nomination }
-            : { recipient: input.trim() },
+            ? { nomination, disclosure }
+            : {
+                recipient: input.trim(),
+                ...(route === "x" ? { disclosure } : {}),
+              },
         ),
         signal: AbortSignal.timeout(20000),
       },
@@ -62,6 +77,8 @@ export async function checkRecipient(
       input: nomination || input,
       state: r.ok ? data.state : data.error,
       profile: data.profile,
+      recipient: data.recipient,
+      disclosure: data.disclosure,
       post: data.post,
       ticket: data.ticket,
       quote: data.quote,
@@ -84,6 +101,7 @@ export async function bindXTax(
   predicted: string,
   quote: string,
   nomination?: string,
+  disclosure?: BeneficiaryDisclosure,
 ) {
   if (!ticket) throw Error("RECIPIENT_CHANGED");
   const res = await fetch("/api/giving/x/bind", {
@@ -95,6 +113,7 @@ export async function bindXTax(
       quote,
       salt,
       confirmed: true,
+      disclosure,
     }),
     signal: AbortSignal.timeout(20000),
   });

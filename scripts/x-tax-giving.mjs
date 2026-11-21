@@ -4,6 +4,7 @@ import {
   processConversion,
   sourceRevenue,
 } from "./x-tax-conversions.mjs";
+import { launchDisclosure } from "./launch-disclosure.mjs";
 import { createNominationBook } from "./giving-nominations.mjs";
 import { DatabaseSync } from "node:sqlite";
 import { chmodSync, mkdirSync, readFileSync, statSync } from "node:fs";
@@ -33,7 +34,7 @@ import { bsc } from "viem/chains";
 import {
   FX_API,
   ONE_CLICK_API,
-  publicXIdentity,
+  publicXProfile,
   nearQuote,
   nearStatus,
   nearDepositDeadline,
@@ -174,7 +175,7 @@ export function createXTaxGiving(env, deps = {}) {
     });
   const resolve =
     deps.resolve ||
-    (useFx ? publicXIdentity : (h) => lookupX(h, env.X_API_BEARER_TOKEN));
+    (useFx ? publicXProfile : (h) => lookupX(h, env.X_API_BEARER_TOKEN));
   const dir = deps.dir || "deployments/private/x-tax";
   const database = join(dir, "routes.sqlite");
   if (deps.sharedLedger) {
@@ -275,11 +276,12 @@ export function createXTaxGiving(env, deps = {}) {
     return h;
   }
   async function identity(raw) {
-    const handle = norm(raw),
-      id = await resolve(handle);
+    const handle = norm(raw);
+    const resolved = await resolve(handle);
+    const id = typeof resolved === "string" ? resolved : resolved?.id;
     if (typeof id !== "string" || !/^\d{1,24}$/.test(id))
       throw Error("X_ACCOUNT_UNVERIFIED");
-    return { handle, id };
+    return { handle, id, ...(typeof resolved === "object" ? { name: resolved.name, avatar: resolved.avatar } : {}) };
   }
   const ticketFor = (v) =>
     mac("identity", JSON.stringify([v.handle, v.id])).toString("hex");
@@ -321,14 +323,21 @@ export function createXTaxGiving(env, deps = {}) {
           "hex",
         )
       : ticketFor(v);
-  async function check(raw, nomination) {
+  function disclosureTicket(v, nomination, disclosure) {
+    const base = scopedTicket(v, nomination);
+    return disclosure ? mac("launch-disclosure", base + ":" + JSON.stringify(disclosure)).toString("hex") : base;
+  }
+  async function check(raw, nomination, options) {
     const v = nomination
       ? await nominations.resolve(nomination)
       : await identity(raw);
+    const disclosure = launchDisclosure(options, v.handle, nomination);
     const q = await liveQuote(wallet(2147483646).address, minimum);
     return {
       state: enabled ? "READY" : "VERIFIED",
-      ...(enabled ? { ticket: scopedTicket(v, nomination) } : {}),
+      ...(enabled ? { ticket: disclosureTicket(v, nomination, disclosure) } : {}),
+      ...(!nomination ? { recipient: { handle: v.handle, profile: "https://x.com/" + v.handle, name: v.name, avatar: v.avatar } } : {}),
+      ...(disclosure ? { disclosure } : {}),
       quote: {
         inputUSDT: formatUnits(minimum, 18),
         minimumUSDC: formatUnits(q.outputAmount, 6),
@@ -342,12 +351,14 @@ export function createXTaxGiving(env, deps = {}) {
     salt,
     confirmed,
     quote = BSC_USDT,
+    disclosure: options,
   }) {
     if (!enabled) throw Error("X_TAX_UNAVAILABLE");
     const v = nomination
       ? await nominations.resolve(nomination)
       : await identity(recipient);
-    if (confirmed !== true || ticket !== scopedTicket(v, nomination))
+    const disclosure = launchDisclosure(options, v.handle, nomination);
+    if (confirmed !== true || ticket !== disclosureTicket(v, nomination, disclosure))
       throw Error("RECIPIENT_CHANGED");
     const asset = await poolAsset(quote);
     const token = predictTaxToken(salt);
@@ -375,7 +386,7 @@ export function createXTaxGiving(env, deps = {}) {
       const address = wallet(idx).address;
       db.prepare(
         "INSERT INTO routes(idx,token,address,identity,ticket,lastBlock) VALUES(?,?,?,?,?,?)",
-      ).run(idx, token, address, seal(v), ticket, block);
+      ).run(idx, token, address, seal({ ...v, disclosure }), ticket, block);
       if (!eq(asset.address, BSC_USDT)) conversions.register(idx, asset, block);
       if (nomination)
         db.prepare(
@@ -506,7 +517,7 @@ export function createXTaxGiving(env, deps = {}) {
   }
   async function sameIdentity(r) {
     const v = open(r.identity);
-    if ((await resolve(v.handle)) !== v.id) throw Error("X_ACCOUNT_CHANGED");
+    if ((await identity(v.handle)).id !== v.id) throw Error("X_ACCOUNT_CHANGED");
     return v;
   }
   async function runRoute(r) {
@@ -827,8 +838,14 @@ export function createXTaxGiving(env, deps = {}) {
     const batches = db
       .prepare("SELECT stage,cents FROM batches WHERE route=? ORDER BY id")
       .all(r.idx);
+    const payee = open(r.identity);
+    const disclosure = payee.disclosure || { visibility: "private", purpose: "" };
     return {
       rail: "xmoney-tax",
+      disclosure: {
+        ...disclosure,
+        ...(disclosure.visibility === "public" ? { profile: "https://x.com/" + payee.handle } : {}),
+      },
       address: r.address,
       token: r.token,
       lastBlock: r.lastBlock,

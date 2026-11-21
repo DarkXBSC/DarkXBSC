@@ -16,6 +16,11 @@ import { GIFT_FACTORY } from "../lib/tax-route";
 import { CopyText } from "../components/Frame";
 
 type Flow = {
+  disclosure?: {
+    visibility: "private" | "public";
+    purpose: string;
+    profile?: string;
+  };
   kind: "xmoney" | "gift" | "reserve" | "merchant" | "direct" | "external";
   address: string;
   block: number;
@@ -276,6 +281,7 @@ export default function Impact() {
           if (n === seq.current)
             setView({
               kind: "xmoney",
+              disclosure: x.disclosure,
               address: x.address,
               block: x.lastBlock,
               received: x.received,
@@ -565,6 +571,27 @@ export default function Impact() {
                   <CopyText value={view.address} />
                   {view.kind === "xmoney" && (
                     <>
+                      <p>
+                        {view.disclosure?.visibility === "public" &&
+                        view.disclosure.profile ? (
+                          <a
+                            href={view.disclosure.profile}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {t("Public X beneficiary", "公开 X 受益人")} · @
+                            {view.disclosure.profile.split("/").pop()}
+                          </a>
+                        ) : (
+                          t(
+                            "Private beneficiary · account processed by the settlement service",
+                            "私密受益人 · 账号由结算服务处理",
+                          )
+                        )}
+                      </p>
+                      {view.disclosure?.purpose && (
+                        <p>{view.disclosure.purpose}</p>
+                      )}
                       <p>
                         {view.conversion
                           ? t("Confirmed conversion proceeds", "已核验兑换所得")

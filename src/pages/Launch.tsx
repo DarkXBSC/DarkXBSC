@@ -1,3 +1,4 @@
+import { composeLaunchImage } from "../lib/launch-image";
 import BinanceRecipientCheck from "../components/BinanceRecipientCheck";
 import {
   BSC_USDT,
@@ -17,7 +18,7 @@ import {
   BadgeCheck,
   Layers,
   Info,
-  Upload,
+  Shield,
   Check,
 } from "lucide-react";
 import { Interface, formatEther, isAddress } from "ethers";
@@ -37,7 +38,7 @@ import {
   short,
   approveExact,
 } from "../lib/chain";
-import { LaunchForm, Preview, prepare, fingerprint } from "../lib/launch";
+import { LaunchForm, Preview, prepare, fingerprint, bps } from "../lib/launch";
 type Quote = {
   address: string;
   symbol: string;
@@ -61,6 +62,7 @@ const blank: LaunchForm = {
   route: "wallet",
   commissionShare: "",
   social: "",
+  disclosure: { visibility: "private", purpose: "" },
   creator: "",
   website: "",
   twitter: "",
@@ -99,6 +101,13 @@ function LaunchFormView() {
           : requestedRoute === "x"
             ? "x"
             : null;
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [publishConsent, setPublishConsent] = useState(false);
+  const [sourceFile, setSourceFile] = useState<File | null>(null);
+  const [imageZoom, setImageZoom] = useState(1);
+  const [imageCaption, setImageCaption] = useState("");
+  const [imageBusy, setImageBusy] = useState(false);
+  const operation = useRef(false);
   const [payCheck, setPayCheck] = useState<RecipientCheck | null>(null);
   const [xEnabled, setXEnabled] = useState<boolean | null>(null);
   const [xCanCheck, setXCanCheck] = useState(false);
@@ -177,6 +186,17 @@ function LaunchFormView() {
           route,
           quote,
           social: "",
+          disclosure: {
+            visibility: nomination
+              ? "private"
+              : draft.disclosure?.visibility === "public"
+                ? "public"
+                : "private",
+            purpose:
+              typeof draft.disclosure?.purpose === "string"
+                ? draft.disclosure.purpose.slice(0, 280)
+                : "",
+          },
           nomination,
           firstBuy:
             savedQuote?.toLowerCase() === quote.toLowerCase()
@@ -222,18 +242,21 @@ function LaunchFormView() {
     }
     let active = true;
     setXChecking(true);
-    void checkRecipient(form.social, "x", nomination).then((result) => {
-      if (active) {
-        setPayCheck(result);
-        setXChecking(false);
-      }
-    });
+    void checkRecipient(form.social, "x", nomination, form.disclosure).then(
+      (result) => {
+        if (active) {
+          setPayCheck(result);
+          setXChecking(false);
+        }
+      },
+    );
     return () => {
       active = false;
     };
   }, [
     form.route,
     form.social,
+    form.disclosure,
     nomination,
     compatiblePool,
     xCanCheck,
@@ -246,24 +269,47 @@ function LaunchFormView() {
     !!payCheck.ticket;
   const generation = useRef(0);
   const update = (key: keyof LaunchForm, value: any) => {
-    if (key === "social") {
+    if (key === "social" || key === "disclosure") {
       setPayCheck(null);
       setXConsent(false);
     }
-    if (["description", "website", "twitter"].includes(key))
+    if (
+      [
+        "name",
+        "symbol",
+        "description",
+        "website",
+        "twitter",
+        "disclosure",
+        "social",
+      ].includes(key)
+    )
       generation.current++;
     setForm((f) => ({
       ...f,
       [key]: value,
-      ...(["description", "website", "twitter"].includes(key)
+      ...([
+        "name",
+        "symbol",
+        "description",
+        "website",
+        "twitter",
+        "disclosure",
+        "social",
+      ].includes(key)
         ? { cid: "", image: "" }
         : {}),
     }));
     setPreview(null);
+    if (key !== "creator") setPublishConsent(false);
   };
   useEffect(() => {
     const { social, nomination, ...draft } = form;
-    localStorage.setItem("tiger-genesis:draft", JSON.stringify(draft));
+    try {
+      localStorage.setItem("tiger-genesis:draft", JSON.stringify(draft));
+    } catch {
+      /* The form remains usable without persistent storage. */
+    }
   }, [form]);
   useEffect(() => {
     if (account && (!form.creator || form.route !== "wallet"))
@@ -298,12 +344,15 @@ function LaunchFormView() {
     setPayCheck(null);
     setXConsent(false);
     setShowSettlement(false);
+    setPublishConsent(false);
     setFilter("all");
     setQ("");
     setForm((f) => ({
       ...f,
       route,
       social: "",
+      cid: "",
+      image: "",
       ...(route === "binance" &&
       f.quote.toLowerCase() !== BSC_USDT.toLowerCase()
         ? { quote: BSC_USDT, firstBuy: "0" }
@@ -319,99 +368,150 @@ function LaunchFormView() {
     setPreview(null);
   }
   async function choose(file: File | undefined) {
-    const gen = ++generation.current;
     setPreview(null);
+    setPublishConsent(false);
+    setSourceFile(null);
     setFile(null);
     setLocalImage("");
     setForm((f) => ({ ...f, cid: "", image: "" }));
-    if (!file) {
-      setFile(null);
-      setLocalImage("");
-      return;
-    }
+    if (!file) return;
     if (
+      !file.size ||
       file.size > 2_500_000 ||
       !["image/png", "image/jpeg", "image/webp"].includes(file.type)
     ) {
       setMessage(
         t(
-          "Use PNG, JPEG or WebP, up to 2.5 MB.",
-          "请使用不超过 2.5 MB 的 PNG、JPEG 或 WebP 图片。",
+          "Use a PNG, JPEG or WebP up to 2.5 MB.",
+          "请选择不超过 2.5 MB 的 PNG、JPEG 或 WebP。",
         ),
       );
       return;
     }
-    try {
-      const bitmap = await createImageBitmap(file);
-      if (bitmap.width > 8192 || bitmap.height > 8192) throw Error();
-      bitmap.close();
-      if (gen !== generation.current) return;
-      setFile(file);
-      setLocalImage(URL.createObjectURL(file));
-    } catch {
-      setMessage(
-        t(
-          "This image could not be decoded. Choose another file.",
-          "无法读取这张图片，请更换文件。",
-        ),
-      );
-    }
+    setImageZoom(1);
+    setImageCaption("");
+    setSourceFile(file);
   }
-  async function upload() {
-    if (!account) return setMessage("CONNECT_WALLET");
-    if (!file && !form.cid) return;
+  useEffect(() => {
+    if (!sourceFile) return;
+    let active = true;
+    ++generation.current;
+    setImageBusy(true);
+    setFile(null);
+    setPreview(null);
+    setPublishConsent(false);
+    setForm((f) => ({ ...f, cid: "", image: "" }));
+    const timer = setTimeout(() => {
+      void composeLaunchImage(sourceFile, imageZoom, imageCaption)
+        .then((image) => {
+          if (!active) return;
+          setFile(image);
+          setLocalImage(URL.createObjectURL(image));
+        })
+        .catch(() => {
+          if (active)
+            setMessage(
+              t(
+                "This image could not be processed. Choose another image.",
+                "图片处理失败，请选择其他图片。",
+              ),
+            );
+        })
+        .finally(() => {
+          if (active) setImageBusy(false);
+        });
+    }, 120);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [sourceFile, imageZoom, imageCaption]);
+  async function upload(): Promise<LaunchForm> {
+    if (!account) throw Error("CONNECT_WALLET");
+    if (!file && !form.cid) throw Error("UPLOAD_IMAGE_FIRST");
     const gen = generation.current;
     setWorking("UPLOADING");
-    try {
-      let cid = form.cid;
-      if (!cid) {
-        const body = new FormData();
-        body.set("image", file!);
-        body.set("creator", account);
-        body.set("description", form.description);
-        body.set("website", form.website);
-        body.set("twitter", form.twitter);
-        const r = await fetch("/api/upload", { method: "POST", body });
-        const data = await r.json();
-        if (!r.ok) throw Error("UPLOAD_FAILED");
-        cid = data.cid;
-        if (gen !== generation.current) return;
-        setForm((f) => ({ ...f, cid }));
+    let cid = form.cid;
+    if (!cid) {
+      const body = new FormData();
+      body.set("image", file!);
+      body.set("creator", account);
+      body.set("description", form.description);
+      body.set("website", form.website);
+      body.set("twitter", form.twitter);
+      body.set("name", form.name);
+      body.set("symbol", form.symbol);
+      if (form.route === "x") {
+        body.set("recipient", form.social);
+        if (nomination) body.set("nomination", nomination);
+        body.set("disclosure", JSON.stringify(form.disclosure));
       }
-      const meta = await fetch("/api/metadata/" + cid, {
-        signal: AbortSignal.timeout(20000),
-      }).then((r) => {
-        if (!r.ok) throw Error("METADATA_UNAVAILABLE");
-        return r.json();
-      });
-      const image = publicUrl(meta.image || "");
-      if (!image) throw Error("METADATA_IMAGE_MISSING");
-      if (gen !== generation.current) return;
-      setForm((f) => ({ ...f, cid, image }));
-      setMessage(
-        t(
-          "Image and metadata pinned to Flap IPFS.",
-          "图片和 metadata 已保存到 Flap IPFS。",
-        ),
-      );
-    } catch (e) {
-      setMessage(errorCode(e));
-    } finally {
-      setWorking("");
+      const r = await fetch("/api/upload", { method: "POST", body });
+      const data = await r.json();
+      if (!r.ok) throw Error(data.error || "UPLOAD_FAILED");
+      cid = data.cid;
+      if (gen !== generation.current) throw Error("LAUNCH_DETAILS_CHANGED");
+      setForm((f) => ({ ...f, cid }));
     }
+    const meta = await fetch("/api/metadata/" + cid, {
+      signal: AbortSignal.timeout(20000),
+    }).then((r) => {
+      if (!r.ok) throw Error("METADATA_UNAVAILABLE");
+      return r.json();
+    });
+    const image = publicUrl(meta.image || "");
+    if (!image) throw Error("METADATA_IMAGE_MISSING");
+    if (gen !== generation.current) throw Error("LAUNCH_DETAILS_CHANGED");
+    const uploaded = { ...form, cid, image };
+    setForm(uploaded);
+    return uploaded;
   }
   async function check() {
+    if (operation.current) return;
     if (!config || !account) return setMessage("CONNECT_WALLET");
-    if (form.route === "wallet" && !isAddress(form.creator))
-      return setMessage("INVALID_ADDRESS");
+    if (!publishConsent) return;
+    operation.current = true;
     setWorking("PREPARING");
     try {
+      if (!identityReady || !selectedQuote) throw Error("INVALID_TOKEN_NAME");
+      const buyTax = bps(form.buyTax),
+        sellTax = bps(form.sellTax);
+      if (!buyTax && !sellTax) throw Error("ZERO_TAX_UNAVAILABLE");
+      if (
+        !/^\d+$/.test(form.taxDays) ||
+        Number(form.taxDays) < 1 ||
+        Number(form.taxDays) > 3650
+      )
+        throw Error("INVALID_TAX_DURATION");
+      units(form.firstBuy, selectedQuote.decimals);
+      if (
+        form.route === "wallet" &&
+        (!isAddress(form.creator) || form.creator === ZeroAddress)
+      )
+        throw Error("INVALID_ADDRESS");
+      const uploaded = await upload();
+      if (uploaded.quote !== ZeroAddress && Number(uploaded.firstBuy) > 0) {
+        setWorking("APPROVING");
+        const c = new Contract(uploaded.quote, erc20, rpc("bsc"));
+        const amount = units(uploaded.firstBuy, Number(await c.decimals()));
+        const target = ["reserve", "commission"].includes(uploaded.route)
+          ? config.protocols.flap.vaultPortal
+          : config.protocols.flap.portal;
+        await approveExact(
+          "bsc",
+          uploaded.quote,
+          target,
+          amount,
+          app.transact,
+          "Approve launch quote",
+        );
+      }
       const p = await prepare(
-        form,
+        uploaded,
         config,
         account,
         setWorking,
-        ["binance", "x"].includes(form.route) && payReady
+        ["binance", "x"].includes(uploaded.route) && payReady
           ? payCheck?.ticket
           : undefined,
       );
@@ -420,33 +520,12 @@ function LaunchFormView() {
     } catch (e) {
       setMessage(errorCode(e));
     } finally {
+      operation.current = false;
       setWorking("");
     }
   }
-  async function approve() {
-    if (!config || form.chain !== "bsc" || form.quote === ZeroAddress) return;
-    try {
-      const c = new Contract(form.quote, erc20, rpc("bsc")),
-        decimals = Number(await c.decimals()),
-        amount = units(form.firstBuy, decimals),
-        to =
-          form.route === "reserve" || form.route === "commission"
-            ? config.protocols.flap.vaultPortal
-            : config.protocols.flap.portal;
-      await approveExact(
-        "bsc",
-        form.quote,
-        to,
-        amount,
-        app.transact,
-        "Approve launch quote",
-      );
-    } catch (e) {
-      setMessage(errorCode(e));
-    }
-  }
   async function launch() {
-    if (!preview || !config) return;
+    if (!preview || !config || operation.current || pending) return;
     if (
       preview.fingerprint !== fingerprint(form) ||
       preview.account !== account ||
@@ -460,6 +539,7 @@ function LaunchFormView() {
         ),
       );
     }
+    operation.current = true;
     setPending(true);
     try {
       if (form.route === "x" || form.route === "binance") {
@@ -467,6 +547,7 @@ function LaunchFormView() {
           form.social,
           form.route,
           nomination,
+          form.disclosure,
         );
         if (
           checked.state !== "READY" ||
@@ -479,6 +560,7 @@ function LaunchFormView() {
               preview.predicted,
               form.quote,
               nomination,
+              form.disclosure,
             )) !== preview.params.beneficiary)
         ) {
           setPreview(null);
@@ -513,6 +595,8 @@ function LaunchFormView() {
     } catch (e: any) {
       setMessage(errorCode(e));
       if (!e?.submitted) setPending(false);
+    } finally {
+      operation.current = false;
     }
   }
   async function register() {
@@ -596,14 +680,37 @@ function LaunchFormView() {
         Number(form.commissionShare) <= 100)) &&
     !!form.name.trim() &&
     !!form.symbol.trim() &&
-    !!form.cid &&
-    !!form.image &&
+    (!!file || (!!form.cid && !!form.image)) &&
+    !imageBusy &&
     !!selectedQuote &&
     compatiblePool &&
     (!stablePool || payReady) &&
     (form.route !== "x" || xConsent) &&
     (form.route !== "square" || !!form.social.trim());
+  const identityReady =
+    !!form.name.trim() &&
+    !!form.symbol.trim() &&
+    new TextEncoder().encode(form.name).length <= 64 &&
+    new TextEncoder().encode(form.symbol).length <= 16 &&
+    (!!file || (!!form.cid && !!form.image)) &&
+    !imageBusy;
   const art = localImage || form.image;
+  function goStep(next: 1 | 2 | 3) {
+    if (working || busy || pending || imageBusy) return;
+    setStep(next);
+    setPreview(null);
+    window.scrollTo(0, 0);
+  }
+  const publicPurpose =
+    form.route === "x" ? form.disclosure?.purpose || "" : "";
+  const recipientLabel =
+    form.route === "x"
+      ? nomination
+        ? nominationTitle || t("Private nomination", "私密受益人提名")
+        : "@" + form.social.replace(/^@/, "")
+      : form.route === "wallet"
+        ? form.creator || t("Connected wallet", "连接的钱包")
+        : channels.find((c) => c.id === form.route)?.full;
   const shareHint =
     form.route === "commission"
       ? t(
@@ -661,6 +768,26 @@ function LaunchFormView() {
           </span>
         </div>
       </header>
+      {!completed && (
+        <nav className="issue-steps" aria-label={t("Launch steps", "发行步骤")}>
+          {[
+            [1, t("Your Meme", "Meme 资料")],
+            [2, t("Tax & privacy", "税收与隐私")],
+            [3, t("Review & launch", "确认发行")],
+          ].map(([n, label]) => (
+            <button
+              key={n}
+              type="button"
+              aria-current={step === n ? "step" : undefined}
+              disabled={Number(n) > step || !!working || busy || pending}
+              onClick={() => goStep(Number(n) as 1 | 2 | 3)}
+            >
+              <span>{n}</span>
+              {label}
+            </button>
+          ))}
+        </nav>
+      )}
       {completed ? (
         <div className="launch-success issue-card">
           <Check size={34} />
@@ -710,7 +837,29 @@ function LaunchFormView() {
         </div>
       ) : preview ? (
         <section className="issue-card issue-review">
-          <h2>{t("Review your launch", "核对发行交易")}</h2>
+          <h2>{t("Confirm your launch", "确认发行交易")}</h2>
+          <div className="issue-token-preview">
+            {art && (
+              <img src={art} alt={t("Final token image", "最终代币图片")} />
+            )}
+            <div>
+              <strong>{form.name}</strong>
+              <span>{form.symbol}</span>
+            </div>
+          </div>
+          {form.route === "x" && (
+            <p className="note">
+              {form.disclosure?.visibility === "public"
+                ? t(
+                    "The beneficiary’s X profile is public.",
+                    "受益人的 X 主页已公开。",
+                  )
+                : t(
+                    "The beneficiary’s X identity is private. Wallet addresses and transactions are public.",
+                    "受益人 X 身份保密，钱包地址和交易公开。",
+                  )}
+            </p>
+          )}
           <dl className="review-terms">
             <div>
               <dt>{t("Token", "代币")}</dt>
@@ -843,6 +992,19 @@ function LaunchFormView() {
               </dd>
             </div>
             <div>
+              <dt>{t("Estimated network fee", "预计网络费")}</dt>
+              <dd>{formatEther(preview.networkFee)} BNB</dd>
+            </div>
+            <div>
+              <dt>{t("Estimated BNB total", "预计 BNB 总支出")}</dt>
+              <dd>
+                {formatEther(
+                  BigInt(preview.networkFee) + BigInt(preview.request.value),
+                )}{" "}
+                BNB
+              </dd>
+            </div>
+            <div>
               <dt>{t("Estimated gas units", "预计 Gas 单位")}</dt>
               <dd>{Number(preview.gas).toLocaleString()}</dd>
             </div>
@@ -876,7 +1038,7 @@ function LaunchFormView() {
               </Link>
             )}
             {!pending && (
-              <button className="button" onClick={() => setPreview(null)}>
+              <button className="button" onClick={() => goStep(2)}>
                 {t("Edit details", "修改资料")}
               </button>
             )}
@@ -895,6 +1057,7 @@ function LaunchFormView() {
           disabled={!!working || busy || pending}
         >
           <section
+            hidden={step !== 1}
             className="issue-card issue-identity"
             aria-label={t("Token details", "代币资料")}
           >
@@ -984,56 +1147,99 @@ function LaunchFormView() {
                 />
               </label>
             </div>
-            {(file || form.cid) && (
-              <div className="issue-upload-meta">
-                <button
-                  className="button"
-                  disabled={!!working || busy}
-                  onClick={() => void (account ? upload() : app.connect())}
-                >
-                  <Upload size={15} />
-                  {!account
-                    ? t("Connect wallet to upload", "连接钱包后上传")
-                    : working === "UPLOADING"
-                      ? t("Uploading…", "正在上传…")
-                      : form.cid
-                        ? t("Refresh pinned metadata", "重新读取已上传资料")
-                        : t("Upload image & metadata", "上传图片与 metadata")}
-                </button>
-                {form.cid ? (
-                  <CopyText value={"ipfs://" + form.cid} />
-                ) : (
-                  <small>
-                    {t(
-                      "Uploading publishes the image and project metadata to IPFS.",
-                      "上传会将图片和项目资料发布至 IPFS。",
-                    )}
-                  </small>
-                )}
+            {sourceFile && (
+              <div className="issue-image-tools">
+                <label>
+                  {t("Crop zoom", "裁剪缩放")}
+                  <input
+                    type="range"
+                    min="1"
+                    max="3"
+                    step=".05"
+                    value={imageZoom}
+                    onChange={(e) => setImageZoom(Number(e.target.value))}
+                  />
+                </label>
+                <label>
+                  {t("Meme caption (optional)", "图片配字（可选）")}
+                  <input
+                    maxLength={80}
+                    value={imageCaption}
+                    onChange={(e) => setImageCaption(e.target.value)}
+                  />
+                </label>
               </div>
             )}
+            <p className="note">
+              {t(
+                "Your image is edited on this device. Publishing starts after your confirmation in step 3. Re-select the image if you reload before uploading.",
+                "图片在本机编辑，第 3 步确认后才公开上传。上传前刷新页面，需要重新选择图片。",
+              )}
+            </p>
           </section>
           <section
+            hidden={step !== 2}
             className="issue-card issue-share route-picker"
             aria-labelledby="issue-share-title"
           >
             <h2 id="issue-share-title">{t("share fees", "分配交易税")}</h2>
             <div className="issue-channels">
-              {channels.map(({ id, label, full, icon }) => (
-                <button
-                  type="button"
-                  key={id}
-                  disabled={!!nomination && id !== "x"}
-                  title={full}
-                  aria-label={full}
-                  aria-pressed={form.route === id}
-                  onClick={() => changeRoute(id)}
-                >
-                  <span>{icon}</span>
-                  <small>{label}</small>
-                </button>
-              ))}
+              {channels
+                .filter((c) => ["x", "commission", "wallet"].includes(c.id))
+                .map(({ id, label, full, icon }) => (
+                  <button
+                    type="button"
+                    key={id}
+                    disabled={!!nomination && id !== "x"}
+                    title={full}
+                    aria-label={full}
+                    aria-pressed={form.route === id}
+                    onClick={() => changeRoute(id)}
+                  >
+                    <span>{icon}</span>
+                    <small>{label}</small>
+                  </button>
+                ))}
             </div>
+            <details
+              className="issue-other-routes"
+              open={
+                ["binance", "square", "reserve"].includes(form.route) ||
+                undefined
+              }
+            >
+              <summary>{t("More tax routes", "其他税收渠道")}</summary>
+              <div className="issue-channels">
+                {channels
+                  .filter((c) =>
+                    ["binance", "square", "reserve"].includes(c.id),
+                  )
+                  .map(({ id, label, full, icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      title={full}
+                      aria-label={full}
+                      aria-pressed={form.route === id}
+                      disabled={
+                        !!nomination || (id === "binance" && merchant === false)
+                      }
+                      onClick={() => changeRoute(id)}
+                    >
+                      <span>{icon}</span>
+                      <small>{label}</small>
+                    </button>
+                  ))}
+              </div>
+              {merchant === false && (
+                <p className="note">
+                  {t(
+                    "Binance Pay is awaiting merchant setup.",
+                    "币安 Pay 待开通商户权限。",
+                  )}
+                </p>
+              )}
+            </details>
             {form.route === "commission" && (
               <label>
                 {t(
@@ -1144,6 +1350,81 @@ function LaunchFormView() {
                     "此付款渠道需要 USDT 底池，请在底池区调整资产或收款方式。",
                   )}
             </p>
+            {form.route === "x" && (
+              <div className="issue-privacy">
+                <h3>
+                  <Shield size={16} />
+                  {t("Beneficiary privacy", "受益人隐私")}
+                </h3>
+                <div className="segmented">
+                  <button
+                    type="button"
+                    aria-pressed={form.disclosure?.visibility !== "public"}
+                    className={
+                      form.disclosure?.visibility !== "public" ? "selected" : ""
+                    }
+                    onClick={() =>
+                      update("disclosure", {
+                        ...form.disclosure,
+                        visibility: "private",
+                      })
+                    }
+                  >
+                    {t("Private beneficiary", "私密受益人")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!!nomination}
+                    aria-pressed={form.disclosure?.visibility === "public"}
+                    className={
+                      form.disclosure?.visibility === "public" ? "selected" : ""
+                    }
+                    onClick={() =>
+                      update("disclosure", {
+                        ...form.disclosure,
+                        visibility: "public",
+                      })
+                    }
+                  >
+                    {t("Public beneficiary", "公开受益人")}
+                  </button>
+                </div>
+                <p>
+                  {form.disclosure?.visibility === "public"
+                    ? t(
+                        "The beneficiary’s X profile will be published in IPFS metadata and Dark’s payment tracker. Confirm you have permission to publish it.",
+                        "受益人的 X 主页会公开写入 IPFS 资料和 Dark 付款查询。请确认已获得对方的公开授权。",
+                      )
+                    : t(
+                        "Dark’s public pages and token metadata omit the beneficiary’s X account. Dark and payment providers process the account to settle payments.",
+                        "Dark 公开页面和代币元数据隐藏受益人的 X 账号。Dark 与付款服务商处理账号以完成结算。",
+                      )}
+                </p>
+                <label>
+                  {t("Public purpose (optional)", "公开公益用途（可选）")}
+                  <input
+                    maxLength={280}
+                    value={form.disclosure?.purpose || ""}
+                    placeholder={t(
+                      "For example, animal rescue artwork",
+                      "例如，支持动物救助宣传",
+                    )}
+                    onChange={(e) =>
+                      update("disclosure", {
+                        ...form.disclosure,
+                        purpose: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <small>
+                  {t(
+                    "The purpose, image and project description are public. Use only information approved for publication. BSC wallets and transactions are public.",
+                    "公益用途、图片和项目描述会公开，请仅填写获准公开的信息。BSC 钱包地址与交易可查。",
+                  )}
+                </small>
+              </div>
+            )}
             {form.route === "x" && (
               <div className="recipient-check">
                 {compatiblePool && (nomination || form.social.trim()) && (
@@ -1269,6 +1550,32 @@ function LaunchFormView() {
                 </div>
               </div>
             )}
+            {form.route === "x" && payReady && payCheck?.recipient && (
+              <div className="issue-verified-recipient" role="status">
+                {payCheck.recipient.avatar ? (
+                  <img
+                    src={payCheck.recipient.avatar}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    width="32"
+                    height="32"
+                  />
+                ) : (
+                  <Check size={16} />
+                )}
+                <span>
+                  {payCheck.recipient.name} ·{" "}
+                  {t("Verified recipient", "已核验受益人")}{" "}
+                  <a
+                    href={payCheck.recipient.profile}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    @{payCheck.recipient.handle}
+                  </a>
+                </span>
+              </div>
+            )}
             {form.route === "square" && (
               <Link to="/app/impact#square-proof">
                 {t("How to publish a payout declaration", "如何发布收款声明")}
@@ -1294,7 +1601,7 @@ function LaunchFormView() {
                 </p>
               )}
           </section>
-          <section className="issue-card issue-pools">
+          <section hidden={step !== 2} className="issue-card issue-pools">
             <h2>
               {t("Paired asset", "底池资产")}
               {quoteStatus === "ready" && (
@@ -1450,7 +1757,7 @@ function LaunchFormView() {
               </div>
             </details>
           </section>
-          <section className="issue-card issue-terms">
+          <section hidden={step !== 2} className="issue-card issue-terms">
             <h2>{t("Trading tax & first buy", "交易税与首买")}</h2>
             <div className="field-row">
               <label>
@@ -1496,17 +1803,6 @@ function LaunchFormView() {
               </small>
             </label>
             {form.chain === "bsc" &&
-              form.quote !== ZeroAddress &&
-              Number(form.firstBuy) > 0 && (
-                <button
-                  className="button"
-                  onClick={() => void approve()}
-                  disabled={busy || !compatiblePool || !selectedQuote}
-                >
-                  {t("Approve the selected quote amount", "授权指定底池金额")}
-                </button>
-              )}
-            {form.chain === "bsc" &&
               Number(form.buyTax) === 0 &&
               Number(form.sellTax) === 0 && (
                 <p className="note">
@@ -1517,36 +1813,134 @@ function LaunchFormView() {
                 </p>
               )}
           </section>
+          {step === 3 && (
+            <section className="issue-card issue-preflight">
+              <h2>{t("Review before publishing", "公开前核对")}</h2>
+              <div className="issue-token-preview">
+                {art && (
+                  <img src={art} alt={t("Final token image", "最终代币图片")} />
+                )}
+                <div>
+                  <strong>{form.name}</strong>
+                  <span>{form.symbol}</span>
+                  <p>{form.description}</p>
+                </div>
+              </div>
+              <dl className="review-terms">
+                <div>
+                  <dt>{t("Tax beneficiary", "税收受益人")}</dt>
+                  <dd>{recipientLabel}</dd>
+                </div>
+                <div>
+                  <dt>{t("Paired asset", "底池资产")}</dt>
+                  <dd>{quoteLabel}</dd>
+                </div>
+                <div>
+                  <dt>{t("Buy / sell tax", "买入 / 卖出税")}</dt>
+                  <dd>
+                    {form.buyTax}% / {form.sellTax}%
+                  </dd>
+                </div>
+                <div>
+                  <dt>{t("Tax duration", "税期")}</dt>
+                  <dd>
+                    {form.taxDays} {t("days", "天")}
+                  </dd>
+                </div>
+                <div>
+                  <dt>{t("Initial buy", "首买")}</dt>
+                  <dd>
+                    {form.firstBuy} {quoteLabel}
+                  </dd>
+                </div>
+                {form.route === "x" && (
+                  <div>
+                    <dt>
+                      {t("Public beneficiary identity", "公开受益人身份")}
+                    </dt>
+                    <dd>
+                      {form.disclosure?.visibility === "public"
+                        ? t("Publish X profile", "公开 X 主页")
+                        : t("Private", "保密")}
+                    </dd>
+                  </div>
+                )}
+                {publicPurpose && (
+                  <div>
+                    <dt>{t("Public purpose", "公开用途")}</dt>
+                    <dd>{publicPurpose}</dd>
+                  </div>
+                )}
+              </dl>
+              <p className="note">{shareHint}</p>
+              <label className="issue-publication-consent">
+                <input
+                  type="checkbox"
+                  checked={publishConsent}
+                  onChange={(e) => setPublishConsent(e.target.checked)}
+                />
+                <span>
+                  {t(
+                    "Publish this image and project information to IPFS, then check the launch. IPFS content can remain public even if I cancel the wallet transaction.",
+                    "同意将此图片和项目资料公开到 IPFS，然后检查发行。取消钱包交易后，IPFS 内容仍可能公开保留。",
+                  )}
+                </span>
+              </label>
+              {form.quote !== ZeroAddress && Number(form.firstBuy) > 0 && (
+                <p className="note">
+                  {t(
+                    "If needed, your wallet will first request approval for exactly the initial-buy amount.",
+                    "如需授权，钱包会先请求与首买金额一致的额度。",
+                  )}
+                </p>
+              )}
+            </section>
+          )}
           <div className="issue-submit">
-            <button
-              className="button primary"
-              disabled={!!account && !canPreview}
-              onClick={() => void (account ? check() : app.connect())}
-            >
-              {!account
-                ? t("Connect wallet to launch", "连接钱包以发行")
-                : working
-                  ? t("Preparing & simulating…", "准备并模拟中…")
-                  : t("Preview launch transaction", "预览发行交易")}
-            </button>
-            {account && !canPreview && (
+            <div className="issue-step-actions">
+              {step > 1 && (
+                <button
+                  className="button"
+                  onClick={() => goStep((step - 1) as 1 | 2)}
+                >
+                  {t("Back", "上一步")}
+                </button>
+              )}
+              <button
+                className="button primary"
+                disabled={
+                  step === 1
+                    ? !identityReady
+                    : step === 2
+                      ? !canPreview
+                      : !!account && (!canPreview || !publishConsent)
+                }
+                onClick={() => {
+                  if (step < 3) goStep((step + 1) as 2 | 3);
+                  else void (account ? check() : app.connect());
+                }}
+              >
+                {step === 1
+                  ? t("Next · Tax & privacy", "下一步 · 税收与隐私")
+                  : step === 2
+                    ? t("Next · Review", "下一步 · 核对发行")
+                    : !account
+                      ? t("Connect wallet", "连接钱包")
+                      : working === "UPLOADING"
+                        ? t("Publishing image…", "正在公开图片…")
+                        : working === "APPROVING"
+                          ? t("Check wallet approval…", "请核对钱包授权…")
+                          : working
+                            ? t("Checking launch…", "正在检查发行…")
+                            : t("Publish & check launch", "公开资料并检查发行")}
+              </button>
+            </div>
+            {step === 2 && !canPreview && (
               <small>
-                {!form.name.trim() || !form.symbol.trim()
-                  ? t("Enter a name and ticker.", "请填写代币名称与代码。")
-                  : !form.cid || !form.image
-                    ? t(
-                        "Choose an image and upload it to IPFS.",
-                        "请选择图片并上传至 IPFS。",
-                      )
-                    : !compatiblePool || !selectedQuote
-                      ? t(
-                          "Choose a pool compatible with the beneficiary.",
-                          "请选择与受益人收款方式兼容的底池。",
-                        )
-                      : t(
-                          "Complete the beneficiary details above.",
-                          "请完成上方的受益人资料。",
-                        )}
+                {t(
+                  "Choose an available pool and complete the beneficiary checks above.",
+                  "请选择可用底池，并完成上方的受益人核验。",
+                )}
               </small>
             )}
             <div>

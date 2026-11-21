@@ -1,4 +1,10 @@
-import { bindXTax, payBeneficiary, BSC_USDT, type TaxRoute } from "./tax-route";
+import {
+  bindXTax,
+  payBeneficiary,
+  BSC_USDT,
+  type TaxRoute,
+  type BeneficiaryDisclosure,
+} from "./tax-route";
 import {
   Interface,
   keccak256,
@@ -22,6 +28,7 @@ export type LaunchForm = {
   quote: string;
   route: TaxRoute;
   social: string;
+  disclosure?: BeneficiaryDisclosure;
   nomination?: string;
   commissionShare?: string;
   creator: string;
@@ -34,6 +41,7 @@ export type Preview = {
   account: string;
   fingerprint: string;
   gas: string;
+  networkFee: string;
   predicted: string;
   createdAt: number;
   label: string;
@@ -170,6 +178,7 @@ export async function prepare(
       predicted,
       form.quote,
       form.nomination,
+      form.disclosure,
     );
   }
   if ((await p.getCode(predicted)) !== "0x") throw Error("SALT_ALREADY_USED");
@@ -251,6 +260,8 @@ export async function prepare(
     throw Error("PREDICTION_MISMATCH");
   predicted = decoded[0];
   const gas = await p.estimateGas(request);
+  const fees = await p.getFeeData();
+  if (fees.gasPrice === null) throw Error("FEE_ESTIMATE_UNAVAILABLE");
   return {
     request: { to, data, value: value.toString() },
     chain: form.chain,
@@ -260,6 +271,7 @@ export async function prepare(
     payTicket,
     squarePayProfile,
     gas: gas.toString(),
+    networkFee: (gas * fees.gasPrice).toString(),
     predicted,
     createdAt: Date.now(),
     label: form.name + " / " + form.symbol,

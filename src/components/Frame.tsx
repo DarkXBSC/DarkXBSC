@@ -311,6 +311,30 @@ const errors: Record<string, [string, string]> = {
     "The network could not be read. Retry shortly.",
     "暂时无法读取网络，请稍后重试。",
   ],
+  PRIVATE_RECIPIENT_IN_PUBLIC_CONTENT: [
+    "The private recipient appears in public project details. Remove the handle or choose public beneficiary mode.",
+    "公开资料中包含私密受益人账号，请移除账号或选择公开受益人模式。",
+  ],
+  PRIVATE_NOMINATION_REQUIRED: [
+    "Community nominations keep their beneficiary private.",
+    "社区提名的受益人须保持私密。",
+  ],
+  INVALID_DISCLOSURE: [
+    "Check the beneficiary privacy setting and public purpose.",
+    "请核对受益人隐私设置与公开用途。",
+  ],
+  DESCRIPTION_TOO_LONG: [
+    "The description and beneficiary disclosure must fit within 2,000 characters.",
+    "项目描述与受益人公开资料合计须在 2,000 个字符以内。",
+  ],
+  LAUNCH_DETAILS_CHANGED: [
+    "Details changed while preparing. Review and check the launch again.",
+    "准备期间资料已变化，请重新核对并检查发行。",
+  ],
+  FEE_ESTIMATE_UNAVAILABLE: [
+    "The network fee estimate is unavailable. Retry the check.",
+    "暂时无法估算网络费用，请重新检查。",
+  ],
   UPLOAD_IMAGE_FIRST: [
     "Upload a real token image and wait for its metadata before previewing.",
     "请先上传真实代币图片并取得 metadata，再预览发行。",

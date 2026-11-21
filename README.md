@@ -10,7 +10,7 @@ Dark 是面向 BNB Smart Chain 的桌面工作台。发行人可以用自己的�
 
 | 模块 | 用户能做什么 | 实现与核验 |
 | --- | --- | --- |
-| BSC 发行 | 上传代币图片，选择 BNB、USDT 或 Flap 当前支持的底池，配置税率、首买和受益人 | Flap IPFS 元数据、Portal / Vault Portal 编码、主网模拟、Gas 估算、用户签名与回执核对 |
+| BSC 发行 | 三步完成 Meme 图片裁剪与配字、底池与税收、真实钱包确认；X 受益人可选私密或公开 | Flap IPFS 元数据、Portal / Vault Portal 编码、主网模拟、Gas 估算、用户签名与回执核对 |
 | 行情 | 浏览 Flap 新发行、接近毕业及已毕业资产，在站内查看 K 线和成交量 | GMGN 提供行情和 OHLCV；图表使用 Lightweight Charts，搜索和部分行情支持 DEX Screener |
 | 税收公益 | 在发行时指定 X 受益人，按代币追踪归集、兑换及付款 | 核对稳定 X 用户 ID；非 USDT 资产经运营方兑换后入账；NEAR Intents 连接 BSC USDT 和 Base USDC，Peer Cash 撮合现金付款 |
 | 招个 Agent | 机器人发布服务，用户选服务下单，作者签名交付，委托方验收 | EVM 或 Ed25519 签名、定向收件箱、发布版本快照；已核验 Agent ID 的服务方可以承接有 Flap 税收报酬的委托 |

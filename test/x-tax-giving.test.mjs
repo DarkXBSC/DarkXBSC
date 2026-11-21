@@ -55,8 +55,14 @@ test("only proved USD for the selected X payout counts, including partial fills"
   assert.deepEqual(verifiedFiat(o, h), { cents: 151n, released: 1510000n });
   assert.throws(() => verifiedFiat(o, id("another payee")));
 });
-for (const viaNomination of [false, true])
+for (const { viaNomination, visibility } of [
+  { viaNomination: false }, { viaNomination: true },
+  { viaNomination: false, visibility: "private" },
+  { viaNomination: false, visibility: "public" },
+  { viaNomination: true, visibility: "private" },
+])
   test(
+    (visibility ? visibility + " disclosure: " : "") +
     (viaNomination ? "Agent ID nomination: " : "") +
       "Flap tax → cross-chain receipts → exact Base order → verified USD; restart and duplicate ticks do not pay twice",
     async (t) => {
@@ -214,7 +220,7 @@ for (const viaNomination of [false, true])
           bsc: source,
           base,
           processor: async () => processor,
-          resolve: async () => userId,
+          resolve: async () => visibility ? { id: userId, name: "Private Friend", avatar: "" } : userId,
         });
       let svc = start();
       t.after(() => {
@@ -224,9 +230,11 @@ for (const viaNomination of [false, true])
       quotesOK = false;
       await assert.rejects(svc.check("@Friend"), /X_QUOTE_UNAVAILABLE/);
       quotesOK = true;
-      const direct = await svc.check("@Friend");
+      const disclosure = visibility ? { visibility, purpose: "Animal rescue artwork" } : undefined;
+      const direct = await svc.check("@Friend", undefined, disclosure);
       let input = {
         recipient: "@Friend",
+        disclosure,
         ticket: direct.ticket,
         salt,
         confirmed: true,
@@ -282,16 +290,16 @@ for (const viaNomination of [false, true])
           false,
         );
         nomination = row.id;
-        const check = await svc.check(undefined, nomination);
+        const check = await svc.check(undefined, nomination, disclosure);
         assert.notEqual(direct.ticket, check.ticket);
         await assert.rejects(
           svc.bind({ ...input, nomination }),
           /RECIPIENT_CHANGED/,
         );
-        input = { nomination, ticket: check.ticket, salt, confirmed: true };
+        input = { nomination, disclosure, ticket: check.ticket, salt, confirmed: true };
         userId = "90002";
         await assert.rejects(
-          svc.check(undefined, nomination),
+          svc.check(undefined, nomination, disclosure),
           /RECIPIENT_CHANGED/,
         );
         userId = "90001";
@@ -300,6 +308,9 @@ for (const viaNomination of [false, true])
         svc.bind({ ...input, confirmed: false }),
         /RECIPIENT_CHANGED/,
       );
+      if (disclosure) {
+        await assert.rejects(svc.bind({ ...input, disclosure: { ...disclosure, purpose: "Changed" } }), /RECIPIENT_CHANGED/);
+      }
       const route = await svc.bind(input);
       if (nomination) {
         assert.deepEqual(svc.nominations.detail(nomination).receipts, []);
@@ -322,7 +333,8 @@ for (const viaNomination of [false, true])
         ),
         false,
       );
-      assert.equal(JSON.stringify(svc.status(token)).includes("friend"), false);
+      assert.equal(JSON.stringify(svc.status(token)).includes("friend"), visibility === "public");
+      if (visibility) assert.equal(svc.status(token).disclosure.visibility, visibility);
       height++;
       transfers = [
         {

@@ -12,7 +12,7 @@ const DEST = "nep141:base-" + USDC.toLowerCase() + ".omft.near";
 const erc20 = new Interface([
   "function transfer(address recipient,uint256 amount) returns(bool)",
 ]);
-export async function publicXIdentity(handle, fetcher = fetch) {
+export async function publicXProfile(handle, fetcher = fetch) {
   if (!/^[a-z0-9_]{1,15}$/.test(handle)) throw Error("INVALID_X_HANDLE");
   const response = await fetcher(FX_API + "/2/profile/" + handle, {
     headers: { Accept: "application/json" },
@@ -31,7 +31,14 @@ export async function publicXIdentity(handle, fetcher = fetch) {
     !/^[1-9]\d{0,23}$/.test(data.user.id)
   )
     throw Error("X_ACCOUNT_UNVERIFIED");
-  return data.user.id;
+  return {
+    id: data.user.id,
+    name: String(data.user.name || handle).slice(0, 100),
+    avatar: /^https:\/\/pbs\.twimg\.com\/profile_images\//.test(data.user.avatar_url || "") ? data.user.avatar_url : "",
+  };
+}
+export async function publicXIdentity(handle, fetcher = fetch) {
+  return (await publicXProfile(handle, fetcher)).id;
 }
 export async function nearQuote(
   cash,
