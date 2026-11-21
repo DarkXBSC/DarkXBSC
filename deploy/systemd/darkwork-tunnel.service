@@ -1,0 +1,18 @@
+[Unit]
+Description=Darkwork Cloudflare Tunnel
+After=network-online.target darkwork-origin.service
+Wants=network-online.target
+
+[Service]
+User=darkwork-tunnel
+Group=darkwork-tunnel
+ExecStart=/usr/local/bin/cloudflared tunnel --no-autoupdate run --token-file /etc/darkwork/tunnel.token
+Restart=always
+RestartSec=3
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

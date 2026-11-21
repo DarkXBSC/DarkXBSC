@@ -1,0 +1,440 @@
+.dir-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
+  align-items: stretch;
+  margin: 5px 0 25px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #1f1f1e;
+  color: #f3f3f0;
+  border-radius: 16px;
+  isolation: isolate;
+}
+.dir-hero > div {
+  padding: 34px 36px 32px;
+  align-self: center;
+}
+.hire-ui .dir-hero h1 {
+  font: 800 clamp(48px, 4.7vw, 72px) / 1.04 var(--bags-display);
+  letter-spacing: -0.04em;
+  color: #f3f3f0;
+}
+.hire-ui .dir-hero p {
+  max-width: 38ch;
+  color: #d6d6d0;
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 13px 0 21px;
+}
+.dir-hero img {
+  height: 100%;
+  width: 100%;
+  max-height: 275px;
+  min-height: 244px;
+  object-fit: cover;
+  object-position: 50% 50%;
+  display: block;
+}
+.hire-ui .dir-hero .hire-btn.primary {
+  color: #171715;
+  background: #f3f3f0;
+  border-color: #f3f3f0;
+}
+.dir-nav,
+.dir-tabs,
+.dir-tools {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.dir-nav {
+  min-height: 46px;
+  gap: 28px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 24px;
+}
+.dir-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 1px 12px;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 650;
+  border-bottom: 2px solid transparent;
+}
+.dir-nav a[aria-current="page"],
+.dir-nav a:hover {
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+.dir-nav a:last-child {
+  margin-left: auto;
+}
+.dir-layout {
+  background: var(--bg);
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 36px;
+}
+.dir-layout aside {
+  padding-right: 16px;
+  border-right: 1px solid var(--line);
+}
+.hire-ui .dir-layout aside h2 {
+  font: 650 13px var(--bags-ui);
+  margin: 6px 0 15px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.dir-layout aside button,
+.dir-tabs button {
+  border: 0;
+  border-radius: 7px;
+  padding: 8px 12px;
+  min-height: 33px;
+  background: transparent;
+  color: var(--muted);
+  font: 600 14px/1.25 var(--bags-ui);
+  cursor: pointer;
+}
+.dir-layout aside button {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 2px 0;
+}
+.dir-layout aside button[aria-pressed="true"],
+.dir-tabs button[aria-pressed="true"] {
+  background: var(--raised);
+  color: var(--text);
+}
+.dir-layout aside button:hover,
+.dir-tabs button:hover {
+  color: var(--text);
+}
+.dir-filters {
+  display: flex;
+  gap: 10px;
+}
+.dir-filters form {
+  background: var(--panel);
+  padding: 3px 4px 3px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+}
+.hire-ui .dir-filters form input {
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  padding: 7px 3px;
+}
+.dir-filters form button {
+  font: 650 13px var(--bags-ui);
+  color: var(--text);
+  background: var(--field);
+  border: 0;
+  border-radius: 6px;
+  padding: 7px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.hire-ui select {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font: 550 14px var(--bags-ui);
+  border-radius: 8px;
+  padding: 8px 13px;
+}
+.dir-result-head,
+.dir-result,
+.dir-empty,
+.dir-selected,
+.dir-fields {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.dir-result-head {
+  margin: 25px 0 12px;
+  gap: 12px;
+}
+.dir-result-head span,
+.dir-category,
+.dir-result > span,
+.dir-tools code {
+  color: var(--muted);
+  font-size: 14px;
+}
+.dir-results {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.dir-result {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr) minmax(65px, 0.22fr) minmax(70px, 0.23fr)
+    auto;
+  border-top: 1px solid var(--line);
+  padding: 17px 0;
+  gap: 14px;
+}
+.dir-result > div {
+  display: grid;
+  gap: 5px;
+}
+.dir-result a {
+  text-decoration: none;
+}
+.dir-result strong {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+.dir-result > div > a:hover {
+  text-decoration: underline;
+}
+.dir-result p {
+  font-size: 14px;
+}
+.dir-empty {
+  padding: 30px 22px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.dir-empty > svg {
+  color: var(--muted);
+  flex: none;
+}
+.hire-ui .dir-empty h3 {
+  font-size: 18px;
+  margin: 0 0 5px;
+}
+.dir-empty p {
+  font-size: 14px;
+}
+.dir-empty .hire-btn {
+  margin-left: auto;
+}
+.dir-sheet {
+  max-width: 850px;
+  margin: 28px auto 38px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  padding: 28px 32px;
+  display: grid;
+  justify-items: start;
+  gap: 18px;
+}
+.dir-sheet > * {
+  max-width: 100%;
+}
+.dir-sheet
+  :is(
+    dl,
+    ul,
+    .dir-tabs,
+    .dir-submission,
+    .hire-section-head,
+    .dir-deliver,
+    .reward-summary
+  ) {
+  width: 100%;
+}
+.hire-ui :is(.dir-sheet, .dir-editor) h1 {
+  font: 750 clamp(28px, 3vw, 42px) / 1.16 var(--bags-ui);
+  letter-spacing: -0.035em;
+  margin: 0;
+  color: var(--text);
+}
+.dir-sheet dl {
+  margin: 0;
+}
+.dir-sheet dl > div {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 20px;
+  border-top: 1px solid var(--line);
+  padding: 13px 0;
+}
+.dir-sheet dt {
+  color: var(--muted);
+  font-size: 14px;
+}
+.dir-sheet dd {
+  margin: 0;
+}
+.dir-sheet dd small {
+  display: block;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.dir-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.dir-body a {
+  text-decoration: underline;
+}
+.dir-fields {
+  align-items: end;
+}
+.dir-fields > * {
+  flex: 1;
+}
+.dir-selected,
+.dir-deliver,
+.dir-submission {
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: var(--field);
+  display: grid;
+  justify-items: start;
+  gap: 9px;
+}
+.dir-deliver label {
+  width: 100%;
+}
+.dir-selected span {
+  color: var(--muted);
+  font-size: 14px;
+}
+.dir-order-photo {
+  max-height: 290px;
+  object-fit: contain;
+}
+.dir-sheet .dir-results {
+  align-self: stretch;
+}
+.dir-tools,
+.dir-tabs {
+  flex-wrap: wrap;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dir-result {
+    animation: hireReveal 0.25s ease-out;
+  }
+}
+.hire-ui .dir-filters > select {
+  width: 170px;
+  flex: 0 0 170px;
+}
+.hire-ui .dir-filters form input {
+  flex: 1;
+  width: 0;
+}
+.dir-filters form > svg {
+  flex-shrink: 0;
+}
+
+.dir-turnaround {
+  display: grid;
+  gap: 2px;
+}
+.dir-turnaround small {
+  font-size: 11px;
+}
+
+.pass-sheet {
+  justify-items: stretch;
+  display: grid;
+  gap: 18px;
+}
+.pass-sheet > .hire-text,
+.pass-sheet > .hire-btn {
+  justify-self: start;
+}
+.pass-sheet h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pass-sheet h1 {
+  overflow-wrap: anywhere;
+}
+.pass-lookup,
+.pass-section,
+.pass-list li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.pass-lookup {
+  align-items: end;
+  padding: 16px 0;
+}
+.pass-lookup label,
+.pass-review-form label,
+.pass-stats > div,
+.pass-list li > div {
+  display: grid;
+  gap: 6px;
+}
+.pass-lookup label {
+  width: min(380px, 65%);
+}
+.pass-section {
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+.pass-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  padding: 14px 0;
+  border-block: 1px solid var(--line);
+}
+.pass-stats strong {
+  font-size: 32px;
+  font-variant-numeric: tabular-nums;
+}
+.pass-stats span,
+.pass-list li > span,
+.pass-review-form small {
+  color: var(--muted);
+}
+.pass-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pass-list li,
+.pass-review {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.pass-list li > div {
+  flex: 1;
+  min-width: 0;
+}
+.pass-review-form {
+  display: grid;
+  gap: 12px;
+  max-width: 640px;
+}
+.pass-review-form textarea {
+  min-height: 84px;
+}
+.pass-review-form button {
+  justify-self: start;
+}
+.pass-work {
+  background: var(--field);
+  border-radius: 16px;
+  padding: 18px;
+}

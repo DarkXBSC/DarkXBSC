@@ -1,0 +1,819 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-19T07:22:16Z",
+  "title": "Design System: Dark",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "displayName": "Ground",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.9)",
+          "oklch(26% 0.0000 89.9)",
+          "oklch(38% 0.0000 89.9)",
+          "oklch(50% 0.0000 89.9)",
+          "oklch(62% 0.0000 89.9)",
+          "oklch(74% 0.0000 89.9)",
+          "oklch(86% 0.0000 89.9)",
+          "oklch(95% 0.0000 89.9)"
+        ]
+      },
+      "chrome": {
+        "displayName": "Chrome",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.9)",
+          "oklch(26% 0.0000 89.9)",
+          "oklch(38% 0.0000 89.9)",
+          "oklch(50% 0.0000 89.9)",
+          "oklch(62% 0.0000 89.9)",
+          "oklch(74% 0.0000 89.9)",
+          "oklch(86% 0.0000 89.9)",
+          "oklch(95% 0.0000 89.9)"
+        ]
+      },
+      "panel": {
+        "displayName": "Panel",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0009 106.6)",
+          "oklch(26% 0.0014 106.6)",
+          "oklch(38% 0.0018 106.6)",
+          "oklch(50% 0.0020 106.6)",
+          "oklch(62% 0.0018 106.6)",
+          "oklch(74% 0.0014 106.6)",
+          "oklch(86% 0.0008 106.6)",
+          "oklch(95% 0.0003 106.6)"
+        ]
+      },
+      "field": {
+        "displayName": "Field",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0009 106.5)",
+          "oklch(26% 0.0014 106.5)",
+          "oklch(38% 0.0017 106.5)",
+          "oklch(50% 0.0019 106.5)",
+          "oklch(62% 0.0017 106.5)",
+          "oklch(74% 0.0014 106.5)",
+          "oklch(86% 0.0008 106.5)",
+          "oklch(95% 0.0003 106.5)"
+        ]
+      },
+      "raised": {
+        "displayName": "Raised",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0016 106.6)",
+          "oklch(26% 0.0026 106.6)",
+          "oklch(38% 0.0033 106.6)",
+          "oklch(50% 0.0036 106.6)",
+          "oklch(62% 0.0033 106.6)",
+          "oklch(74% 0.0026 106.6)",
+          "oklch(86% 0.0015 106.6)",
+          "oklch(95% 0.0006 106.6)"
+        ]
+      },
+      "line": {
+        "displayName": "Line",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0016 106.6)",
+          "oklch(26% 0.0026 106.6)",
+          "oklch(38% 0.0033 106.6)",
+          "oklch(50% 0.0036 106.6)",
+          "oklch(62% 0.0033 106.6)",
+          "oklch(74% 0.0026 106.6)",
+          "oklch(86% 0.0015 106.6)",
+          "oklch(95% 0.0006 106.6)"
+        ]
+      },
+      "ink": {
+        "displayName": "Ink",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0018 106.5)",
+          "oklch(26% 0.0029 106.5)",
+          "oklch(38% 0.0037 106.5)",
+          "oklch(50% 0.0040 106.5)",
+          "oklch(62% 0.0037 106.5)",
+          "oklch(74% 0.0029 106.5)",
+          "oklch(86% 0.0017 106.5)",
+          "oklch(95% 0.0006 106.5)"
+        ]
+      },
+      "muted": {
+        "displayName": "Muted",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0039 106.6)",
+          "oklch(26% 0.0062 106.6)",
+          "oklch(38% 0.0079 106.6)",
+          "oklch(50% 0.0086 106.6)",
+          "oklch(62% 0.0079 106.6)",
+          "oklch(74% 0.0062 106.6)",
+          "oklch(86% 0.0036 106.6)",
+          "oklch(95% 0.0013 106.6)"
+        ]
+      },
+      "action": {
+        "displayName": "Action",
+        "role": "primary",
+        "tonalRamp": [
+          "oklch(15% 0.0018 106.5)",
+          "oklch(26% 0.0029 106.5)",
+          "oklch(38% 0.0037 106.5)",
+          "oklch(50% 0.0040 106.5)",
+          "oklch(62% 0.0037 106.5)",
+          "oklch(74% 0.0029 106.5)",
+          "oklch(86% 0.0017 106.5)",
+          "oklch(95% 0.0006 106.5)"
+        ]
+      },
+      "action-ink": {
+        "displayName": "Action Ink",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.9)",
+          "oklch(26% 0.0000 89.9)",
+          "oklch(38% 0.0000 89.9)",
+          "oklch(50% 0.0000 89.9)",
+          "oklch(62% 0.0000 89.9)",
+          "oklch(74% 0.0000 89.9)",
+          "oklch(86% 0.0000 89.9)",
+          "oklch(95% 0.0000 89.9)"
+        ]
+      },
+      "positive": {
+        "displayName": "Positive",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0758 148.5)",
+          "oklch(26% 0.1218 148.5)",
+          "oklch(38% 0.1553 148.5)",
+          "oklch(50% 0.1670 148.5)",
+          "oklch(62% 0.1553 148.5)",
+          "oklch(74% 0.1218 148.5)",
+          "oklch(86% 0.0711 148.5)",
+          "oklch(95% 0.0261 148.5)"
+        ]
+      },
+      "negative": {
+        "displayName": "Negative",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0858 20.7)",
+          "oklch(26% 0.1377 20.7)",
+          "oklch(38% 0.1756 20.7)",
+          "oklch(50% 0.1889 20.7)",
+          "oklch(62% 0.1756 20.7)",
+          "oklch(74% 0.1377 20.7)",
+          "oklch(86% 0.0804 20.7)",
+          "oklch(95% 0.0295 20.7)"
+        ]
+      },
+      "market-up": {
+        "displayName": "Market Up",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0849 146.9)",
+          "oklch(26% 0.1363 146.9)",
+          "oklch(38% 0.1738 146.9)",
+          "oklch(50% 0.1870 146.9)",
+          "oklch(62% 0.1738 146.9)",
+          "oklch(74% 0.1363 146.9)",
+          "oklch(86% 0.0796 146.9)",
+          "oklch(95% 0.0292 146.9)"
+        ]
+      },
+      "market-down": {
+        "displayName": "Market Down",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0887 16.9)",
+          "oklch(26% 0.1424 16.9)",
+          "oklch(38% 0.1816 16.9)",
+          "oklch(50% 0.1953 16.9)",
+          "oklch(62% 0.1816 16.9)",
+          "oklch(74% 0.1424 16.9)",
+          "oklch(86% 0.0831 16.9)",
+          "oklch(95% 0.0305 16.9)"
+        ]
+      },
+      "candle-up": {
+        "displayName": "Candle Up",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0547 154.3)",
+          "oklch(26% 0.0878 154.3)",
+          "oklch(38% 0.1119 154.3)",
+          "oklch(50% 0.1204 154.3)",
+          "oklch(62% 0.1119 154.3)",
+          "oklch(74% 0.0878 154.3)",
+          "oklch(86% 0.0513 154.3)",
+          "oklch(95% 0.0188 154.3)"
+        ]
+      },
+      "candle-down": {
+        "displayName": "Candle Down",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0650 14.1)",
+          "oklch(26% 0.1043 14.1)",
+          "oklch(38% 0.1331 14.1)",
+          "oklch(50% 0.1431 14.1)",
+          "oklch(62% 0.1331 14.1)",
+          "oklch(74% 0.1043 14.1)",
+          "oklch(86% 0.0609 14.1)",
+          "oklch(95% 0.0224 14.1)"
+        ]
+      },
+      "film-ground": {
+        "displayName": "Film Ground",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.9)",
+          "oklch(26% 0.0000 89.9)",
+          "oklch(38% 0.0000 89.9)",
+          "oklch(50% 0.0000 89.9)",
+          "oklch(62% 0.0000 89.9)",
+          "oklch(74% 0.0000 89.9)",
+          "oklch(86% 0.0000 89.9)",
+          "oklch(95% 0.0000 89.9)"
+        ]
+      },
+      "film-ink": {
+        "displayName": "Film Ink",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.9)",
+          "oklch(26% 0.0000 89.9)",
+          "oklch(38% 0.0000 89.9)",
+          "oklch(50% 0.0000 89.9)",
+          "oklch(62% 0.0000 89.9)",
+          "oklch(74% 0.0000 89.9)",
+          "oklch(86% 0.0000 89.9)",
+          "oklch(95% 0.0000 89.9)"
+        ]
+      },
+      "ground-light": {
+        "displayName": "Ground Light",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0012 106.4)",
+          "oklch(26% 0.0019 106.4)",
+          "oklch(38% 0.0025 106.4)",
+          "oklch(50% 0.0026 106.4)",
+          "oklch(62% 0.0025 106.4)",
+          "oklch(74% 0.0019 106.4)",
+          "oklch(86% 0.0011 106.4)",
+          "oklch(95% 0.0004 106.4)"
+        ]
+      },
+      "chrome-light": {
+        "displayName": "Chrome Light",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0012 106.4)",
+          "oklch(26% 0.0019 106.4)",
+          "oklch(38% 0.0025 106.4)",
+          "oklch(50% 0.0026 106.4)",
+          "oklch(62% 0.0025 106.4)",
+          "oklch(74% 0.0019 106.4)",
+          "oklch(86% 0.0011 106.4)",
+          "oklch(95% 0.0004 106.4)"
+        ]
+      },
+      "panel-light": {
+        "displayName": "Panel Light",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.9)",
+          "oklch(26% 0.0000 89.9)",
+          "oklch(38% 0.0000 89.9)",
+          "oklch(50% 0.0000 89.9)",
+          "oklch(62% 0.0000 89.9)",
+          "oklch(74% 0.0000 89.9)",
+          "oklch(86% 0.0000 89.9)",
+          "oklch(95% 0.0000 89.9)"
+        ]
+      },
+      "field-light": {
+        "displayName": "Field Light",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0018 106.5)",
+          "oklch(26% 0.0029 106.5)",
+          "oklch(38% 0.0037 106.5)",
+          "oklch(50% 0.0040 106.5)",
+          "oklch(62% 0.0037 106.5)",
+          "oklch(74% 0.0029 106.5)",
+          "oklch(86% 0.0017 106.5)",
+          "oklch(95% 0.0006 106.5)"
+        ]
+      },
+      "raised-light": {
+        "displayName": "Raised Light",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0030 106.5)",
+          "oklch(26% 0.0049 106.5)",
+          "oklch(38% 0.0062 106.5)",
+          "oklch(50% 0.0067 106.5)",
+          "oklch(62% 0.0062 106.5)",
+          "oklch(74% 0.0049 106.5)",
+          "oklch(86% 0.0029 106.5)",
+          "oklch(95% 0.0010 106.5)"
+        ]
+      },
+      "line-light": {
+        "displayName": "Line Light",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0037 106.6)",
+          "oklch(26% 0.0059 106.6)",
+          "oklch(38% 0.0076 106.6)",
+          "oklch(50% 0.0081 106.6)",
+          "oklch(62% 0.0076 106.6)",
+          "oklch(74% 0.0059 106.6)",
+          "oklch(86% 0.0035 106.6)",
+          "oklch(95% 0.0013 106.6)"
+        ]
+      },
+      "ink-light": {
+        "displayName": "Ink Light",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0018 106.7)",
+          "oklch(26% 0.0028 106.7)",
+          "oklch(38% 0.0036 106.7)",
+          "oklch(50% 0.0039 106.7)",
+          "oklch(62% 0.0036 106.7)",
+          "oklch(74% 0.0028 106.7)",
+          "oklch(86% 0.0017 106.7)",
+          "oklch(95% 0.0006 106.7)"
+        ]
+      },
+      "muted-light": {
+        "displayName": "Muted Light",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0028 106.6)",
+          "oklch(26% 0.0046 106.6)",
+          "oklch(38% 0.0058 106.6)",
+          "oklch(50% 0.0062 106.6)",
+          "oklch(62% 0.0058 106.6)",
+          "oklch(74% 0.0046 106.6)",
+          "oklch(86% 0.0027 106.6)",
+          "oklch(95% 0.0010 106.6)"
+        ]
+      },
+      "action-light": {
+        "displayName": "Action Light",
+        "role": "primary",
+        "tonalRamp": [
+          "oklch(15% 0.0018 106.7)",
+          "oklch(26% 0.0028 106.7)",
+          "oklch(38% 0.0036 106.7)",
+          "oklch(50% 0.0039 106.7)",
+          "oklch(62% 0.0036 106.7)",
+          "oklch(74% 0.0028 106.7)",
+          "oklch(86% 0.0017 106.7)",
+          "oklch(95% 0.0006 106.7)"
+        ]
+      },
+      "action-ink-light": {
+        "displayName": "Action Ink Light",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.9)",
+          "oklch(26% 0.0000 89.9)",
+          "oklch(38% 0.0000 89.9)",
+          "oklch(50% 0.0000 89.9)",
+          "oklch(62% 0.0000 89.9)",
+          "oklch(74% 0.0000 89.9)",
+          "oklch(86% 0.0000 89.9)",
+          "oklch(95% 0.0000 89.9)"
+        ]
+      },
+      "positive-light": {
+        "displayName": "Positive Light",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0552 151.6)",
+          "oklch(26% 0.0886 151.6)",
+          "oklch(38% 0.1130 151.6)",
+          "oklch(50% 0.1215 151.6)",
+          "oklch(62% 0.1130 151.6)",
+          "oklch(74% 0.0886 151.6)",
+          "oklch(86% 0.0517 151.6)",
+          "oklch(95% 0.0190 151.6)"
+        ]
+      },
+      "negative-light": {
+        "displayName": "Negative Light",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0791 19.2)",
+          "oklch(26% 0.1271 19.2)",
+          "oklch(38% 0.1621 19.2)",
+          "oklch(50% 0.1743 19.2)",
+          "oklch(62% 0.1621 19.2)",
+          "oklch(74% 0.1271 19.2)",
+          "oklch(86% 0.0742 19.2)",
+          "oklch(95% 0.0273 19.2)"
+        ]
+      },
+      "market-up-light": {
+        "displayName": "Market Up Light",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0562 151.1)",
+          "oklch(26% 0.0903 151.1)",
+          "oklch(38% 0.1151 151.1)",
+          "oklch(50% 0.1238 151.1)",
+          "oklch(62% 0.1151 151.1)",
+          "oklch(74% 0.0903 151.1)",
+          "oklch(86% 0.0527 151.1)",
+          "oklch(95% 0.0194 151.1)"
+        ]
+      },
+      "market-down-light": {
+        "displayName": "Market Down Light",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0810 19.1)",
+          "oklch(26% 0.1301 19.1)",
+          "oklch(38% 0.1659 19.1)",
+          "oklch(50% 0.1785 19.1)",
+          "oklch(62% 0.1659 19.1)",
+          "oklch(74% 0.1301 19.1)",
+          "oklch(86% 0.0760 19.1)",
+          "oklch(95% 0.0279 19.1)"
+        ]
+      },
+      "candle-up-light": {
+        "displayName": "Candle Up Light",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0601 151.9)",
+          "oklch(26% 0.0966 151.9)",
+          "oklch(38% 0.1232 151.9)",
+          "oklch(50% 0.1325 151.9)",
+          "oklch(62% 0.1232 151.9)",
+          "oklch(74% 0.0966 151.9)",
+          "oklch(86% 0.0564 151.9)",
+          "oklch(95% 0.0207 151.9)"
+        ]
+      },
+      "candle-down-light": {
+        "displayName": "Candle Down Light",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0716 16.5)",
+          "oklch(26% 0.1150 16.5)",
+          "oklch(38% 0.1467 16.5)",
+          "oklch(50% 0.1578 16.5)",
+          "oklch(62% 0.1467 16.5)",
+          "oklch(74% 0.1150 16.5)",
+          "oklch(86% 0.0672 16.5)",
+          "oklch(95% 0.0247 16.5)"
+        ]
+      },
+      "film-ground-light": {
+        "displayName": "Film Ground Light",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.9)",
+          "oklch(26% 0.0000 89.9)",
+          "oklch(38% 0.0000 89.9)",
+          "oklch(50% 0.0000 89.9)",
+          "oklch(62% 0.0000 89.9)",
+          "oklch(74% 0.0000 89.9)",
+          "oklch(86% 0.0000 89.9)",
+          "oklch(95% 0.0000 89.9)"
+        ]
+      },
+      "film-ink-light": {
+        "displayName": "Film Ink Light",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.9)",
+          "oklch(26% 0.0000 89.9)",
+          "oklch(38% 0.0000 89.9)",
+          "oklch(50% 0.0000 89.9)",
+          "oklch(62% 0.0000 89.9)",
+          "oklch(74% 0.0000 89.9)",
+          "oklch(86% 0.0000 89.9)",
+          "oklch(95% 0.0000 89.9)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "home-title": {
+        "displayName": "Home Title",
+        "purpose": "Home welcome headline."
+      },
+      "board-title": {
+        "displayName": "Board Title",
+        "purpose": "Trade heading."
+      },
+      "giving-title": {
+        "displayName": "Giving Title",
+        "purpose": "Giving welcome headline."
+      },
+      "page-title": {
+        "displayName": "Page Title",
+        "purpose": "Launch page title."
+      },
+      "panel-title": {
+        "displayName": "Panel Title",
+        "purpose": "Launch section title."
+      },
+      "lane-title": {
+        "displayName": "Lane Title",
+        "purpose": "Market stage heading."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Body copy."
+      },
+      "navigation": {
+        "displayName": "Navigation",
+        "purpose": "Top capsule links."
+      },
+      "action": {
+        "displayName": "Action",
+        "purpose": "Primary controls."
+      },
+      "field": {
+        "displayName": "Field",
+        "purpose": "Form inputs."
+      },
+      "brand": {
+        "displayName": "Brand",
+        "purpose": "Header wordmark."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Contract data and film instrumentation."
+      },
+      "brand-display": {
+        "displayName": "Brand Display",
+        "purpose": "Original About headline."
+      }
+    },
+    "shadows": [
+      {
+        "name": "market-dialog",
+        "value": "0 24px 100px #0005",
+        "purpose": "Separates the search or asset dialog from its dimmed background."
+      }
+    ],
+    "motion": [
+      {
+        "name": "controls",
+        "value": "background 0.18s, color 0.18s, border-color 0.18s",
+        "purpose": "Workspace control feedback."
+      },
+      {
+        "name": "market-ticker",
+        "value": "86s linear infinite",
+        "purpose": "Horizontal market-cap ticker. Hover or focus pauses it, and reduced motion suppresses animation."
+      },
+      {
+        "name": "opening",
+        "value": "6.6s",
+        "purpose": "Opening film timeline after loading. Skip or Escape enters Home."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "desktop-minimum",
+        "value": "1080px"
+      },
+      {
+        "name": "compact-desktop-chrome",
+        "value": "1240px"
+      }
+    ],
+    "film": {
+      "engine": "Three.js perspective camera, authored GLSL particle shaders and line geometry.",
+      "budget": {
+        "seededParticles": 9000,
+        "trailingSamplesPerParticle": 2,
+        "totalPointSamples": 27000,
+        "devicePixelRatioCap": 2,
+        "seed": 731991,
+        "preserveDrawingBuffer": true
+      },
+      "camera": {
+        "fieldOfViewDegrees": 45,
+        "near": 0.1,
+        "far": 100,
+        "curve": "CatmullRomCurve3",
+        "positions": [
+          [
+            -3.2,
+            0.5,
+            2.4
+          ],
+          [
+            -1.2,
+            1.6,
+            4.2
+          ],
+          [
+            0.8,
+            0.9,
+            6.2
+          ],
+          [
+            0,
+            0,
+            8.2
+          ]
+        ],
+        "lookTargets": [
+          [
+            -2.5,
+            0,
+            0
+          ],
+          [
+            -0.5,
+            0,
+            0
+          ],
+          [
+            0.5,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ]
+        ],
+        "settledBehavior": "Restrained idle drift, smoothed pointer parallax, and scroll-driven camera approach."
+      },
+      "choreography": {
+        "gatherSeconds": [
+          1.2,
+          3.4
+        ],
+        "sourcesSeconds": [
+          1.6,
+          2.4
+        ],
+        "coreSeconds": [
+          2.8,
+          3.6
+        ],
+        "destinationsSeconds": [
+          4.6,
+          5.4
+        ],
+        "labelFadeInSeconds": [
+          1.9,
+          2.5
+        ],
+        "labelFadeOutSeconds": [
+          5.9,
+          6.5
+        ],
+        "heroRevealSeconds": 6,
+        "settledSeconds": 6.6
+      },
+      "nodes": {
+        "sources": [
+          "SRC.01 BSC",
+          "SRC.02 FLAP",
+          "SRC.03 WALLET"
+        ],
+        "core": "CORE / DARK",
+        "destinations": [
+          "DST.01 LAUNCH",
+          "DST.02 QUOTE",
+          "DST.03 GIVING"
+        ],
+        "meaning": "Illustrated working paths."
+      },
+      "paint": "Uses current theme ink. Settled signal stage opacity is 0.45; fullscreen opening opacity is 1. Projected labels and canvas are aria-hidden.",
+      "clock": "Film time starts at loading handover, not HTTP request time. Native capture filenames and film-timeline.json distinguish wall time from scene time."
+    },
+    "provenance": {
+      "originalIdentity": "public/brand/dark-mark.png",
+      "imageGenerationPrompt": "docs/logo-prompt.txt",
+      "artworkRegister": "docs/provenance.md",
+      "cinematicReference": "docs/motion-spec.md",
+      "direction": "docs/panels-direction.md",
+      "currentScreens": [
+        ".impeccable/review/bags/home.png",
+        ".impeccable/review/bags/explore.png",
+        ".impeccable/review/bags/launch.png",
+        ".impeccable/review/bags/impact.png",
+        ".impeccable/review/bags/learn.png",
+        ".impeccable/review/bags/contracts.png"
+      ],
+      "artwork": "Original transparent ImageGen D with embedded prompt. The Lionel reference informed timing and camera movement. Dark’s Three.js/GLSL scene is independently authored. Market thumbnails identify the individual third-party token.",
+      "ramps": "The tonal strips are interpolated for the design viewer. Frontmatter colors specify the actual UI values.",
+      "fonts": [
+        "public/fonts/open-runde/LICENSE.txt",
+        "public/fonts/archivo-black/OFL.txt"
+      ]
+    }
+  },
+  "components": [
+    {
+      "name": "Wallet action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary wallet control on the welcome screen.",
+      "html": "<div class=\"ds\"><button type=\"button\">Connect wallet</button></div>",
+      "css": ".ds{background:var(--bg,#0b0b0b);color:var(--text,#f3f3f0);padding:16px;font:500 15px/1.4 \"Open Runde\",\"PingFang SC\",sans-serif}.ds *{box-sizing:border-box}.ds button,.ds input{font:inherit}.ds :focus-visible{outline:2px solid currentColor;outline-offset:3px}.ds button,.ds a{cursor:pointer}.ds button{background:var(--accent,#f3f3f0);color:var(--accent-ink,#0d0d0d);border:0;border-radius:100px;height:52px;padding:0 24px;font-size:16px;font-weight:700}.ds :is(button,a):hover{filter:brightness(.92)}.ds :is(button,a):active{opacity:.85}.ds input:hover{border-color:var(--line,#2a2a28)}"
+    },
+    {
+      "name": "Workspace navigation",
+      "kind": "nav",
+      "refersTo": "navigation-active",
+      "description": "Five persistent destinations in a centered capsule.",
+      "html": "<div class=\"ds\"><nav aria-label=\"Workspace\"><a href=\"/app/home\" aria-current=\"page\">Home</a><a href=\"/app/launch\">Launch</a><a href=\"/app/explore\">Trade</a><a href=\"/app/impact\">Giving</a><a href=\"/app/learn\">Docs</a></nav></div>",
+      "css": ".ds{background:var(--bg,#0b0b0b);color:var(--text,#f3f3f0);padding:16px;font:500 15px/1.4 \"Open Runde\",\"PingFang SC\",sans-serif}.ds *{box-sizing:border-box}.ds button,.ds input{font:inherit}.ds :focus-visible{outline:2px solid currentColor;outline-offset:3px}.ds button,.ds a{cursor:pointer}.ds nav{display:inline-flex;padding:5px;gap:1px;border-radius:30px;background:var(--field,#1f1f1e)}.ds a{padding:9px 15px;text-decoration:none;font-weight:700;color:inherit;font-size:14px;line-height:20px}.ds [aria-current]{background:var(--accent,#f3f3f0);color:var(--accent-ink,#0d0d0d);border:0;border-radius:25px}.ds :is(button,a):hover{filter:brightness(.92)}.ds :is(button,a):active{opacity:.85}.ds input:hover{border-color:var(--line,#2a2a28)}"
+    },
+    {
+      "name": "Identity field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Name and ticker inputs share the same field style.",
+      "html": "<div class=\"ds\"><input type=\"text\" aria-label=\"Token name\" placeholder=\"Name\"></div>",
+      "css": ".ds{background:var(--bg,#0b0b0b);color:var(--text,#f3f3f0);padding:16px;font:500 15px/1.4 \"Open Runde\",\"PingFang SC\",sans-serif}.ds *{box-sizing:border-box}.ds button,.ds input{font:inherit}.ds :focus-visible{outline:2px solid currentColor;outline-offset:3px}.ds button,.ds a{cursor:pointer}.ds input{height:56px;width:100%;background:var(--field,#1f1f1e);color:inherit;border:1px solid transparent;border-radius:17px;padding:0 19px;font-size:17px;font-weight:600}.ds :is(button,a):hover{filter:brightness(.92)}.ds :is(button,a):active{opacity:.85}.ds input:hover{border-color:var(--line,#2a2a28)}"
+    },
+    {
+      "name": "Beneficiary channel",
+      "kind": "chip",
+      "refersTo": "route-chip-selected",
+      "description": "A selected channel tile reveals the corresponding identity field.",
+      "html": "<div class=\"ds\"><button aria-pressed=\"true\" type=\"button\"><b>X</b><small>X Money</small></button></div>",
+      "css": ".ds{background:var(--bg,#0b0b0b);color:var(--text,#f3f3f0);padding:16px;font:500 15px/1.4 \"Open Runde\",\"PingFang SC\",sans-serif}.ds *{box-sizing:border-box}.ds button,.ds input{font:inherit}.ds :focus-visible{outline:2px solid currentColor;outline-offset:3px}.ds button,.ds a{cursor:pointer}.ds button{border:0;background:none;color:inherit;display:grid;gap:4px;padding:0;text-align:center;width:64px}.ds b{background:var(--accent,#f3f3f0);color:var(--accent-ink,#0d0d0d);border:0;height:48px;display:grid;place-items:center;border-radius:16px;font-size:20px}.ds small{font-size:11px}.ds :is(button,a):hover{filter:brightness(.92)}.ds :is(button,a):active{opacity:.85}.ds input:hover{border-color:var(--line,#2a2a28)}"
+    },
+    {
+      "name": "Market stage",
+      "kind": "card",
+      "refersTo": "market-lane",
+      "description": "Each column retains its header while assets scroll inside.",
+      "html": "<div class=\"ds\"><section><h2>New</h2><p>No assets in this stage.</p></section></div>",
+      "css": ".ds{background:var(--bg,#0b0b0b);color:var(--text,#f3f3f0);padding:16px;font:500 15px/1.4 \"Open Runde\",\"PingFang SC\",sans-serif}.ds *{box-sizing:border-box}.ds button,.ds input{font:inherit}.ds :focus-visible{outline:2px solid currentColor;outline-offset:3px}.ds button,.ds a{cursor:pointer}.ds section{border:1px solid var(--line,#2a2a28);background:var(--panel,#151514);border-radius:24px;padding:20px}.ds h2{font:900 18px/20px \"Archivo Black\",sans-serif;margin:0}.ds p{color:var(--muted,#a3a39d);font-size:14px}.ds :is(button,a):hover{filter:brightness(.92)}.ds :is(button,a):active{opacity:.85}.ds input:hover{border-color:var(--line,#2a2a28)}"
+    },
+    {
+      "name": "Launch form card",
+      "kind": "card",
+      "refersTo": "operation-panel",
+      "description": "One section of the centered issuance form.",
+      "html": "<div class=\"ds\"><section><h2>Token details</h2><input aria-label=\"Ticker\" placeholder=\"Ticker\"></section></div>",
+      "css": ".ds{background:var(--bg,#0b0b0b);color:var(--text,#f3f3f0);padding:16px;font:500 15px/1.4 \"Open Runde\",\"PingFang SC\",sans-serif}.ds *{box-sizing:border-box}.ds button,.ds input{font:inherit}.ds :focus-visible{outline:2px solid currentColor;outline-offset:3px}.ds button,.ds a{cursor:pointer}.ds section{border:1px solid var(--line,#2a2a28);background:var(--panel,#151514);border-radius:24px;padding:20px;max-width:560px}.ds h2{margin:0 0 16px;font-size:16px}.ds input{height:56px;width:100%;background:var(--field,#1f1f1e);color:inherit;border:1px solid transparent;border-radius:17px;padding:0 19px}.ds :is(button,a):hover{filter:brightness(.92)}.ds :is(button,a):active{opacity:.85}.ds input:hover{border-color:var(--line,#2a2a28)}"
+    },
+    {
+      "name": "Giving panel",
+      "kind": "card",
+      "refersTo": "giving-panel",
+      "description": "The giving entry leads to receipt lookup and recipient selection.",
+      "html": "<div class=\"ds\"><section><h2>TRACK YOUR<br>TRADING FEE<br>PAYOUTS.</h2><a href=\"/app/impact?view=track\">Track a payout</a></section></div>",
+      "css": ".ds{background:var(--bg,#0b0b0b);color:var(--text,#f3f3f0);padding:16px;font:500 15px/1.4 \"Open Runde\",\"PingFang SC\",sans-serif}.ds *{box-sizing:border-box}.ds button,.ds input{font:inherit}.ds :focus-visible{outline:2px solid currentColor;outline-offset:3px}.ds button,.ds a{cursor:pointer}.ds section{border:1px solid var(--line,#2a2a28);background:var(--panel,#151514);border-radius:24px;padding:20px;max-width:592px;text-align:center;border-radius:28px}.ds h2{font:400 54px/1 \"Archivo Black\",sans-serif}.ds a{background:var(--accent,#f3f3f0);color:var(--accent-ink,#0d0d0d);border:0;display:inline-block;border-radius:100px;padding:14px 24px;text-decoration:none}.ds :is(button,a):hover{filter:brightness(.92)}.ds :is(button,a):active{opacity:.85}.ds input:hover{border-color:var(--line,#2a2a28)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "A clear desk for value in motion",
+    "overview": "Dark opens with its original monochrome particle film. The desktop workspace then uses Bags’ welcome, trade, launch and earnings layouts for four distinct tasks. The geometric D identifies Dark in both the film and the sticky header.\n\nHome shows the configured X giving batch and the verified BSC contract count. Trade compares Flap markets by stage. Launch collects a token’s public details, beneficiary and economics in reading order. Giving starts with a choice to track a payout or select a tax beneficiary.",
+    "keyCharacteristics": [
+      "Centered navigation with five page links and a More tools button in a black or paper-colored header. Wallet and search controls sit to its right.",
+      "A fine scanline texture frames solid cards with thin, low-contrast edges.",
+      "The Trade view is wide and dense. Launch and Giving use centered single columns.",
+      "Open Runde handles interface text. Archivo Black sets the home, market and giving display headings."
+    ],
+    "rules": [
+      {
+        "name": "The Theme Pair Rule",
+        "body": "Invert the geometric D on dark chrome and preserve the original colors of token art across themes.",
+        "section": "colors"
+      },
+      {
+        "name": "The Price Precision Rule",
+        "body": "Keep enough leading zeros to read a small price. Show the time interval and currency beside its chart.",
+        "section": "typography"
+      }
+    ],
+    "dos": [
+      "Keep the notice about Dark’s official token visible on Home.",
+      "Identify each market source and the time interval for each chart.",
+      "Keep the wallet-signing action after review, and label beneficiary checks beside their controls.",
+      "Preserve keyboard focus, reduced motion, first-entry skip and About replay."
+    ],
+    "donts": [
+      "Add mobile layouts or touch-specific controls.",
+      "Use northeast-arrow decorations on links, buttons or signage.",
+      "Substitute projected earnings, mock trades or unverified payments for measured values."
+    ]
+  }
+}

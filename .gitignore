@@ -1,0 +1,33 @@
+# Local credentials and environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.keystore
+secrets/
+deployments/private/
+
+# Local build and tooling output
+node_modules/
+dist/
+artifacts/
+cache/
+coverage/
+*.log
+.DS_Store
+work/
+tsconfig.tsbuildinfo
+.impeccable/review/
+
+# Generated distribution, databases and host-only credentials
+/public/dark-genesis-source.zip
+/deployments/plan.json
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+*.p12
+*.pfx
+*.token
+.impeccable/questions/

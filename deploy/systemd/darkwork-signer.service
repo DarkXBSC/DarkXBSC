@@ -1,0 +1,33 @@
+[Unit]
+Description=Dark BSC and Base X Money settlement signer
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=darkwork-signer
+Group=darkwork-signer
+SupplementaryGroups=darkwork-ledger
+WorkingDirectory=/opt/darkwork/current
+ExecStart=/usr/local/bin/node24 scripts/x-signer.mjs
+LoadCredential=giving.env:/etc/darkwork/settlement/giving.env
+LoadCredential=sponsor.key:/etc/darkwork/settlement/sponsor.key
+RuntimeDirectory=darkwork-signer
+RuntimeDirectoryMode=0755
+UMask=0007
+Restart=always
+RestartSec=5
+TimeoutStopSec=90
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectProc=invisible
+ProtectKernelTunables=yes
+LimitCORE=0
+ReadWritePaths=/var/lib/darkwork-settlement
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

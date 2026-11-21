@@ -1,0 +1,32 @@
+[Unit]
+Description=Dark private giving controller
+After=network-online.target darkwork-signer.service
+Wants=darkwork-signer.service
+
+[Service]
+User=darkwork-giving
+Group=darkwork-giving
+SupplementaryGroups=darkwork-ledger
+WorkingDirectory=/opt/darkwork/current
+Environment=DARK_API_PORT=5371
+Environment=DARK_GIVING_CONTROLLER=yes
+Environment=DARK_PUBLIC_ORIGIN=https://darkwork.fun
+LoadCredential=giving.env:/etc/darkwork/settlement/giving.env
+ExecStart=/usr/local/bin/node24 scripts/server.mjs
+UMask=0007
+Restart=always
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectProc=invisible
+ProtectKernelTunables=yes
+LimitCORE=0
+ReadWritePaths=/var/lib/darkwork-settlement
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

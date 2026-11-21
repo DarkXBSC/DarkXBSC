@@ -1,0 +1,24 @@
+[Unit]
+Description=Darkwork public API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=darkwork
+Group=darkwork
+WorkingDirectory=/opt/darkwork/current
+Environment=DARK_API_PORT=5367
+Environment=DARK_WEB_PORT=5366
+Environment=DARK_PUBLIC_ORIGIN=https://darkwork.fun
+ExecStart=/usr/local/bin/node24 scripts/server.mjs
+Restart=always
+RestartSec=3
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/darkwork
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

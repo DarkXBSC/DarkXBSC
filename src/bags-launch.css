@@ -1,0 +1,627 @@
+/* The launch composer follows the reference's 560px column and 20px form rhythm. */
+.workspace .bags-launch {
+  --issue-card: #fff;
+  --issue-field: #f2f2ef;
+  --issue-edge: #deded9;
+  --issue-ink: #191917;
+  --issue-dim: #64645c;
+  --issue-placeholder: #676760;
+  --issue-cta: #181817;
+  --issue-cta-ink: #fff;
+  width: min(560px, 100%);
+  margin-inline: auto;
+  padding-bottom: 64px;
+  color: var(--issue-ink);
+  font-family: var(--bags-ui, "Archivo Variable", sans-serif);
+}
+:root[data-theme="dark"] .workspace .bags-launch {
+  --issue-card: #151514;
+  --issue-field: #1f1f1d;
+  --issue-edge: #30302d;
+  --issue-ink: #f3f3f0;
+  --issue-dim: #aaa9a1;
+  --issue-placeholder: #999991;
+  --issue-cta: #f3f3f0;
+  --issue-cta-ink: #121211;
+}
+.bags-launch *,
+.bags-launch *::before,
+.bags-launch *::after {
+  box-sizing: border-box;
+}
+.bags-launch label {
+  margin: 0;
+}
+.workspace .bags-launch .issue-intro {
+  padding: 32px 0 20px;
+  text-align: center;
+}
+.workspace .bags-launch .issue-intro h1 {
+  margin: 0;
+  font: 700 40px/48px var(--bags-ui, "Archivo Variable", sans-serif);
+  letter-spacing: -0.035em;
+  text-transform: none;
+}
+.workspace .bags-launch .issue-intro p {
+  margin: 8px 0 16px;
+  color: var(--issue-dim);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 28px;
+}
+.issue-networks {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.issue-networks span {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 13px;
+  border-radius: 100px;
+  background: var(--issue-field);
+  color: var(--issue-dim);
+  font-size: 13px;
+  font-weight: 650;
+}
+.issue-networks span:first-child {
+  color: var(--issue-ink);
+}
+.issue-networks svg {
+  width: 15px;
+  height: 15px;
+}
+.issue-networks span:first-child svg {
+  color: #cf9e09;
+}
+.bags-launch .issue-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 0;
+  border: 0;
+  margin: 0;
+  min-width: 0;
+}
+.bags-launch .issue-card {
+  border: 1px solid var(--issue-edge);
+  border-radius: 24px;
+  background: var(--issue-card);
+  padding: 20px;
+  min-width: 0;
+}
+.workspace .bags-launch .issue-card h2 {
+  font-family: var(--bags-ui, "Archivo Variable", sans-serif);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 20px;
+  letter-spacing: -0.015em;
+  margin: 0 0 16px;
+}
+.bags-launch .issue-identity,
+.bags-launch .issue-name-fields {
+  display: grid;
+  gap: 20px;
+}
+.bags-launch .issue-identity-top {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 16px;
+}
+.bags-launch .issue-name-fields {
+  grid-template-rows: 56px 56px;
+  min-width: 0;
+}
+.workspace
+  .bags-launch
+  .issue-card
+  :is(input:not([type="file"]):not([type="checkbox"]), select, textarea) {
+  margin: 0;
+  min-width: 0;
+  width: 100%;
+  display: block;
+  outline-offset: 2px;
+  background: var(--issue-field);
+  border: 1px solid transparent;
+  border-radius: 17px;
+  color: var(--issue-ink);
+  height: 56px;
+  padding: var(--issue-field-inset, 0) 19px;
+  font: 600 17px/1.5 var(--bags-ui, "Archivo Variable", sans-serif);
+  letter-spacing: -0.01em;
+}
+.workspace .bags-launch .issue-card textarea {
+  height: 120px;
+  min-height: 120px;
+  --issue-field-inset: 18px;
+  resize: none;
+}
+.workspace .bags-launch .issue-card :is(input, textarea)::placeholder {
+  color: var(--issue-placeholder);
+  opacity: 1;
+}
+.bags-launch .issue-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 132px;
+  height: 132px;
+  background: var(--issue-field);
+  border: 1px solid var(--issue-edge);
+  border-radius: 18px;
+  cursor: pointer;
+  color: var(--issue-placeholder);
+}
+.bags-launch .issue-art input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+.bags-launch .issue-art:focus-within {
+  outline: 2px solid var(--issue-ink);
+  outline-offset: 3px;
+}
+.bags-launch .issue-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+.bags-launch .issue-art-edit {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  display: grid;
+  place-items: center;
+  background: var(--issue-cta);
+  color: var(--issue-cta-ink);
+  border: 3px solid var(--issue-card);
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+}
+.bags-launch .issue-art-edit svg {
+  width: 13px;
+  height: 13px;
+}
+.bags-launch .issue-links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.bags-launch .issue-links label {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+.bags-launch .issue-links svg {
+  position: absolute;
+  left: 16px;
+  top: 20px;
+  width: 16px;
+  height: 16px;
+  color: var(--issue-dim);
+  pointer-events: none;
+}
+.workspace
+  .bags-launch
+  .issue-links
+  label
+  input:not([type="file"]):not([type="checkbox"]) {
+  padding-left: 39px;
+  font-size: 15px;
+}
+.bags-launch .issue-upload-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.bags-launch .issue-form small,
+.bags-launch .issue-submit small {
+  font-size: 12px;
+  color: var(--issue-dim);
+  line-height: 1.4;
+}
+.workspace .bags-launch .issue-card.route-picker {
+  display: block;
+  margin: 0;
+  min-width: 0;
+}
+.bags-launch .issue-channels {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 0 16px;
+  min-height: 68px;
+}
+.bags-launch .issue-channels button {
+  width: 64px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: none;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  color: var(--issue-dim);
+  cursor: pointer;
+}
+.bags-launch .issue-channels button > span {
+  border-radius: 16px;
+  background: var(--issue-field);
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 48px;
+  transition:
+    background 0.16s,
+    color 0.16s;
+}
+.bags-launch .issue-channels button:hover > span {
+  background: var(--issue-edge);
+  color: var(--issue-ink);
+}
+.bags-launch .issue-channels button[aria-pressed="true"] > span {
+  background: var(--issue-cta);
+  color: var(--issue-cta-ink);
+}
+.bags-launch .issue-channels button svg {
+  width: 21px;
+  height: 21px;
+}
+.bags-launch .issue-channels button small {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--issue-ink);
+  line-height: 16px;
+  visibility: hidden;
+  white-space: nowrap;
+}
+.bags-launch
+  .issue-channels
+  button:is([aria-pressed="true"], :hover, :focus-visible)
+  small {
+  visibility: visible;
+}
+.bags-launch .issue-handle {
+  display: block;
+  position: relative;
+  margin: 0;
+}
+.workspace
+  .bags-launch
+  .issue-card
+  .issue-handle
+  input:not([type="file"]):not([type="checkbox"]) {
+  height: 60px;
+  font-size: 19px;
+  font-weight: 700;
+  padding-inline: 15px 16px;
+}
+.workspace
+  .bags-launch
+  .issue-handle:has(.issue-money)
+  input:not([type="file"]):not([type="checkbox"]) {
+  padding-right: 185px;
+  font-size: 23px;
+}
+.bags-launch .issue-money {
+  position: absolute;
+  right: 9px;
+  top: 9px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+.bags-launch .issue-money > svg {
+  width: 41px;
+  height: 41px;
+  padding: 10px;
+  border: 2px solid var(--issue-ink);
+  border-radius: 12px;
+  color: var(--issue-ink);
+  background: var(--issue-card);
+}
+.bags-launch .issue-money > span {
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: #215b29;
+  color: #65d877;
+  font-size: 23px;
+  font-weight: 850;
+  width: 36px;
+  height: 36px;
+}
+.bags-launch .issue-money button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: center;
+  min-width: 78px;
+  height: 40px;
+  margin-left: 3px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--issue-edge);
+  color: var(--issue-dim);
+  font: 650 13px/1 var(--bags-ui, sans-serif);
+  pointer-events: auto;
+  cursor: pointer;
+}
+.bags-launch .issue-money button:hover,
+.bags-launch .issue-money button[aria-expanded="true"] {
+  color: var(--issue-ink);
+}
+.workspace .bags-launch .issue-share .issue-share-hint {
+  color: var(--issue-dim);
+  font-size: 12px;
+  line-height: 17px;
+  margin: 7px 4px 0;
+}
+.bags-launch .recipient-check {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.workspace .bags-launch .recipient-check p,
+.workspace .bags-launch .issue-card > p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--issue-dim);
+  margin: 9px 0;
+}
+.bags-launch .recipient-check > label {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.48;
+  margin-top: 13px;
+  color: var(--issue-ink);
+}
+.bags-launch .recipient-check input[type="checkbox"] {
+  appearance: auto;
+  flex: 0 0 auto;
+  accent-color: var(--issue-ink);
+  width: 15px;
+  height: 15px;
+  margin: 1px 0 0;
+}
+.bags-launch .quote-result {
+  display: block;
+  margin-top: 4px;
+}
+.bags-launch .issue-settlement {
+  margin: 7px 4px 0;
+}
+.bags-launch .issue-settlement[hidden],
+.bags-launch .recipient-check:not(:has(> :not([hidden]))) {
+  display: none;
+}
+.bags-launch .pool-info summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  cursor: pointer;
+  color: var(--issue-dim);
+  font-size: 12px;
+  font-weight: 600;
+  list-style: none;
+}
+.bags-launch .issue-card.issue-pools > h2 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--issue-dim);
+  margin: 0 0 7px;
+}
+.bags-launch .issue-pools h2 span { font-size: 12px; font-weight: 500; }
+.bags-launch .pool-directory {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 0;
+  margin: 0;
+}
+.bags-launch .pool-directory button {
+  border: 1px solid transparent;
+  background: var(--issue-field);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  padding: 9px 12px;
+  color: var(--issue-dim);
+  min-height: 48px;
+  min-width: 0;
+  cursor: pointer;
+}
+.bags-launch .pool-directory button.selected {
+  background: var(--issue-cta);
+  color: var(--issue-cta-ink);
+}
+.bags-launch .pool-directory img {
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  object-fit: contain;
+}
+.bags-launch .pool-directory button span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.bags-launch .pool-directory button strong {
+  font-size: 14px;
+}
+.bags-launch .pool-directory button small {
+  line-height: 14px;
+  font-size: 10px;
+  color: inherit;
+  opacity: 0.72;
+  max-width: 180px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.bags-launch .pool-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 4px 0 12px;
+}
+.bags-launch .pool-tools .segmented {
+  margin: 0;
+}
+.workspace
+  .bags-launch
+  .pool-tools
+  input:not([type="file"]):not([type="checkbox"]) {
+  width: 155px;
+  height: 35px;
+  font-size: 12px;
+  padding: 0 11px;
+}
+.bags-launch .pool-info {
+  margin: 10px 4px 0;
+}
+.bags-launch .pool-selection,
+.bags-launch .pool-compatibility p {
+  margin: 10px 0 4px;
+  color: var(--issue-dim);
+  font-size: 13px;
+}
+.bags-launch .pool-selection strong { color: var(--issue-ink); }
+.bags-launch .pool-compatibility .button {
+  margin: 5px 6px 0 0;
+  font-size: 12px;
+}
+.bags-launch .selected-pool {
+  background: transparent;
+  border: 0;
+  display: grid;
+  gap: 5px;
+  margin: 8px 0 0;
+  padding: 0;
+  color: var(--issue-dim);
+}
+.bags-launch .copy {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.bags-launch .copy code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.bags-launch .issue-terms,
+.bags-launch .issue-review {
+  display: grid;
+  gap: 15px;
+}
+.bags-launch .field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.bags-launch .issue-terms label,
+.bags-launch .issue-review label,
+.bags-launch .issue-share > label:not(.issue-handle) {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--issue-dim);
+}
+.bags-launch .issue-terms label small {
+  font-weight: 500;
+}
+.bags-launch .issue-card.issue-terms h2,
+.bags-launch .issue-card.issue-review h2 {
+  margin: 0;
+}
+.bags-launch .issue-submit {
+  display: grid;
+  gap: 10px;
+  text-align: center;
+  color: var(--issue-dim);
+}
+.workspace .bags-launch .button {
+  border-radius: 100px;
+  background: var(--issue-field);
+  color: var(--issue-ink);
+  border: 0;
+  font-family: inherit;
+}
+.workspace .bags-launch .button.primary {
+  background: var(--issue-cta);
+  color: var(--issue-cta-ink);
+}
+.workspace .bags-launch .issue-submit > button {
+  width: 100%;
+  height: 52px;
+  font-size: 16px;
+  font-weight: 700;
+  justify-content: center;
+}
+.bags-launch .issue-submit > div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+}
+.bags-launch .issue-submit a:hover,
+.bags-launch .issue-share > a:hover {
+  text-decoration: underline;
+}
+.bags-launch .issue-review .review-terms {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+.bags-launch .issue-review .review-terms div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--issue-edge);
+}
+.bags-launch .issue-review dd {
+  margin: 0;
+  text-align: right;
+  word-break: break-word;
+}
+.bags-launch .issue-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.bags-launch .launch-success {
+  display: grid;
+  gap: 14px;
+}

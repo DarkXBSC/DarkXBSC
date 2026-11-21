@@ -1,0 +1,375 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { randomBytes } from "node:crypto";
+import {
+  Interface,
+  Wallet,
+  parseUnits,
+  id,
+  Transaction,
+  keccak256,
+} from "ethers";
+import {
+  createXTaxGiving,
+  predictTaxToken,
+  verifiedFiat,
+} from "../scripts/x-tax-giving.mjs";
+import { USDC } from "../scripts/peer-pay.mjs";
+import { BSC_USDT } from "../scripts/binance-giving.mjs";
+
+const u = (s, d = 18) => parseUnits(s, d);
+const erc = new Interface([
+  "event Transfer(address indexed from,address indexed to,uint256 value)",
+  "function approve(address spender,uint256 amount)",
+]);
+function transfer(asset, from, to, amount) {
+  return {
+    address: asset,
+    ...erc.encodeEventLog("Transfer", [from, to, amount]),
+  };
+}
+test("X settlement fails closed without independent operator settings", () => {
+  assert.equal(createXTaxGiving({}).enabled, false);
+});
+test("only proved USD for the selected X payout counts, including partial fills", () => {
+  const h = id("opaque payee"),
+    fill = {
+      status: "FULFILLED",
+      paidCurrency: "USD",
+      fiatPaid: 1.51,
+      paymentId: "p1",
+      releasedAmount: 1510000n,
+    };
+  const o = {
+    payouts: [{ platform: "xmoney", currency: "USD", payeeHash: h }],
+    fills: [
+      fill,
+      fill,
+      { ...fill, paymentId: "p2", status: "SIGNALED" },
+      { ...fill, paymentId: "p3", paidCurrency: "EUR" },
+    ],
+  };
+  assert.deepEqual(verifiedFiat(o, h), { cents: 151n, released: 1510000n });
+  assert.throws(() => verifiedFiat(o, id("another payee")));
+});
+for (const viaNomination of [false, true])
+  test(
+    (viaNomination ? "Agent ID nomination: " : "") +
+      "Flap tax → cross-chain receipts → exact Base order → verified USD; restart and duplicate ticks do not pay twice",
+    async (t) => {
+      const dir = mkdtempSync(join(tmpdir(), "dark-x-tax-"));
+      const env = {
+        X_TAX_ENABLE: "yes",
+        X_TAX_SEED: randomBytes(32).toString("hex"),
+        X_API_BEARER_TOKEN: "fixture",
+        RELAY_API_KEY: "fixture",
+        X_TAX_MIN_USDT: "25",
+        X_TAX_MAX_USDT: "30",
+      };
+      const salt = id("launch salt"),
+        token = predictTaxToken(salt),
+        processor = Wallet.createRandom().address,
+        other = Wallet.createRandom().address,
+        escrow = Wallet.createRandom().address,
+        payee = id("private payee");
+      const impl = JSON.parse(
+        readFileSync(new URL("../public/protocols.json", import.meta.url)),
+      )
+        .flap.taxImplementation.slice(2)
+        .toLowerCase();
+      let height = 91,
+        recipient,
+        userId = "90001",
+        bridgeCalls = 0,
+        delivered = false,
+        destinationReady = false,
+        transfers = [],
+        quotesOK = true,
+        submissions = 0;
+      const receiptMap = new Map();
+      const bridgeIn = id("bsc"),
+        bridgeOut = id("base"),
+        actual = u("29.93", 6);
+      const source = {
+        getNetwork: async () => ({ chainId: 56n }),
+        getBlock: async () => ({ number: height }),
+        getCode: async () =>
+          "0x363d3d373d3d3d363d73" + impl + "5af43d82803e903d91602b57fd5bf3",
+        getLogs: async ({ fromBlock, toBlock }) =>
+          transfers.filter(
+            (l) => l.blockNumber >= fromBlock && l.blockNumber <= toBlock,
+          ),
+        getBalance: async () => u("0.01"),
+        getTransactionReceipt: async (h) =>
+          h === bridgeIn
+            ? {
+                from: recipient,
+                status: 1,
+                blockNumber: height,
+                logs: [transfer(BSC_USDT, recipient, other, u("30"))],
+              }
+            : null,
+      };
+      const base = {
+        getNetwork: async () => ({ chainId: 8453n }),
+        getBlock: async () => ({ number: 100 }),
+        getBalance: async () => u("0.01"),
+        getCode: async () => "0x12",
+        getFeeData: async () => ({
+          gasPrice: 100n,
+          maxFeePerGas: 200n,
+          maxPriorityFeePerGas: 50n,
+        }),
+        estimateGas: async () => 100000n,
+        getTransactionCount: async () => submissions,
+        getTransaction: async () => null,
+        getTransactionReceipt: async (h) =>
+          h === bridgeOut
+            ? {
+                status: 1,
+                blockNumber: destinationReady ? 99 : 101,
+                logs: [transfer(USDC, other, recipient, actual)],
+              }
+            : receiptMap.get(h),
+        broadcastTransaction: async (raw) => {
+          const tx = Transaction.from(raw);
+          assert.equal(tx.chainId, 8453n);
+          assert.equal(tx.from, recipient);
+          submissions++;
+          receiptMap.set(keccak256(raw), {
+            status: 1,
+            blockNumber: 98,
+            logs: [],
+          });
+        },
+      };
+      const cash = {
+        quoteSource: async ({ amount, source }) => ({
+          requestId: "relay-fixture",
+          inputAmount: amount,
+          outputAmount: quotesOK ? (amount * 997n) / (1000n * 10n ** 12n) : 1n,
+          source: { chainId: source.chainId, address: source.currency },
+          destination: { chainId: 8453, address: USDC },
+        }),
+        executeSourceQuote: async () => {
+          bridgeCalls++;
+          throw Error("network response lost");
+        },
+        relayStatus: async (requestId) => ({
+          requestId,
+          status: "success",
+          originChainId: 56,
+          destinationChainId: 8453,
+          inTxHashes: [bridgeIn],
+          txHashes: [bridgeOut],
+        }),
+        prepare: async ({ amount, receive }) => {
+          assert.equal(amount, actual);
+          assert.deepEqual(receive, {
+            platform: "xmoney",
+            currency: "USD",
+            payee: "friend",
+          });
+          return {
+            register: { hashedOnchainIds: [payee] },
+            steps: [{ kind: "approve" }, { kind: "createDeposit" }],
+            txs: [
+              {
+                to: USDC,
+                data: erc.encodeFunctionData("approve", [escrow, amount]),
+                value: 0n,
+                chainId: 8453,
+              },
+              { to: escrow, data: "0x1234", value: 0n, chainId: 8453 },
+            ],
+          };
+        },
+        finalizePreparedCashout: () => ({ depositId: "fixture-order" }),
+        order: async (depositId) => ({
+          depositId,
+          state: delivered ? "delivered" : "awaiting-buyer",
+          totalAmount: actual,
+          returnedAmount: 0n,
+          payouts: [{ platform: "xmoney", currency: "USD", payeeHash: payee }],
+          fills: delivered
+            ? [
+                {
+                  status: "FULFILLED",
+                  paidCurrency: "USD",
+                  fiatPaid: 29.92,
+                  paymentId: "fiat-proof",
+                  releasedAmount: actual,
+                },
+              ]
+            : [],
+        }),
+      };
+      const start = () =>
+        createXTaxGiving(env, {
+          dir,
+          cash,
+          bsc: source,
+          base,
+          processor: async () => processor,
+          resolve: async () => userId,
+        });
+      let svc = start();
+      t.after(() => {
+        svc.close();
+        rmSync(dir, { force: true, recursive: true });
+      });
+      quotesOK = false;
+      await assert.rejects(svc.check("@Friend"), /X_QUOTE_UNAVAILABLE/);
+      quotesOK = true;
+      const direct = await svc.check("@Friend");
+      let input = {
+        recipient: "@Friend",
+        ticket: direct.ticket,
+        salt,
+        confirmed: true,
+      };
+      let nomination;
+      if (viaNomination) {
+        const signer = Wallet.createRandom(),
+          fields = {
+            address: signer.address,
+            recipient: "Friend",
+            title: "Art for shelters",
+            reason: "Volunteer posters",
+            confirmed: true,
+          };
+        const book = svc.nominations;
+        assert.throws(
+          () => book.challenge({ ...fields, reason: "Help @friend" }, "local"),
+          /INVALID_NOMINATION/,
+        );
+        let ch = book.challenge(fields, "local");
+        await assert.rejects(
+          book.publish(
+            {
+              id: ch.id,
+              signature: await Wallet.createRandom().signMessage(ch.message),
+            },
+            async () => ({ eligible: true }),
+          ),
+          /INVALID_SIGNATURE/,
+        );
+        await assert.rejects(
+          book.publish(
+            { id: ch.id, signature: await signer.signMessage(ch.message) },
+            async () => ({ eligible: false }),
+          ),
+          /AGENT_ID_REQUIRED/,
+        );
+        ch = book.challenge(fields, "local");
+        const signed = {
+          id: ch.id,
+          signature: await signer.signMessage(ch.message),
+        };
+        const row = await book.publish(signed, async () => ({
+          eligible: true,
+        }));
+        await assert.rejects(
+          book.publish(signed, async () => ({ eligible: true })),
+          /CHALLENGE_EXPIRED/,
+        );
+        assert.equal(row.owner, signer.address);
+        assert.equal(
+          JSON.stringify(book.list()).toLowerCase().includes("friend"),
+          false,
+        );
+        nomination = row.id;
+        const check = await svc.check(undefined, nomination);
+        assert.notEqual(direct.ticket, check.ticket);
+        await assert.rejects(
+          svc.bind({ ...input, nomination }),
+          /RECIPIENT_CHANGED/,
+        );
+        input = { nomination, ticket: check.ticket, salt, confirmed: true };
+        userId = "90002";
+        await assert.rejects(
+          svc.check(undefined, nomination),
+          /RECIPIENT_CHANGED/,
+        );
+        userId = "90001";
+      }
+      await assert.rejects(
+        svc.bind({ ...input, confirmed: false }),
+        /RECIPIENT_CHANGED/,
+      );
+      const route = await svc.bind(input);
+      if (nomination) {
+        assert.deepEqual(svc.nominations.detail(nomination).receipts, []);
+        await assert.rejects(
+          svc.bind({
+            recipient: "Friend",
+            ticket: direct.ticket,
+            salt,
+            confirmed: true,
+          }),
+          /RECIPIENT_CHANGED/,
+        );
+      }
+      recipient = route.address;
+      assert.equal(route.token, token);
+      assert.equal((await svc.bind(input)).address, recipient);
+      assert.equal(
+        readFileSync(join(dir, "routes.sqlite")).includes(
+          Buffer.from("friend"),
+        ),
+        false,
+      );
+      assert.equal(JSON.stringify(svc.status(token)).includes("friend"), false);
+      height++;
+      transfers = [
+        {
+          ...transfer(BSC_USDT, other, recipient, u("999")),
+          blockNumber: height,
+        },
+        {
+          ...transfer(BSC_USDT, processor, recipient, u("33")),
+          blockNumber: height,
+        },
+      ];
+      userId = "90002";
+      await svc.tick();
+      assert.equal(svc.status(token).issue, "X_ACCOUNT_CHANGED");
+      assert.equal(bridgeCalls, 0);
+      assert.equal(svc.status(token).received, "33.0");
+      userId = "90001";
+      await Promise.all([svc.tick(), svc.tick()]);
+      assert.equal(bridgeCalls, 1);
+      svc.close();
+      svc = start();
+      await svc.tick();
+      assert.equal(svc.status(token).stage, "bridge");
+      destinationReady = true;
+      await svc.tick();
+      assert.equal(svc.status(token).stage, "base");
+      await svc.tick();
+      assert.equal(svc.status(token).stage, "approve");
+      for (let i = 0; i < 8; i++) await svc.tick();
+      assert.equal(submissions, 2);
+      assert.equal(svc.status(token).stage, "matching");
+      assert.equal(svc.status(token).paid, "0.0");
+      delivered = true;
+      await svc.tick();
+      await svc.tick();
+      assert.equal(svc.status(token).stage, "paid");
+      assert.equal(svc.status(token).paid, "29.92");
+      if (nomination)
+        assert.equal(
+          svc.nominations.list(0, svc.nominations.detail(nomination).owner)
+            .paidBeneficiaries,
+          1,
+        );
+      if (nomination)
+        assert.deepEqual(svc.nominations.detail(nomination).receipts, [
+          { token, stage: "paid", paidCents: "2992" },
+        ]);
+      assert.equal(bridgeCalls, 1);
+    },
+  );

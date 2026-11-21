@@ -1,0 +1,47 @@
+{
+  "at": "2026-11-19T11:52:31.163Z",
+  "project": "tiger-genesis",
+  "deployer": "0x79e4C8b8E842a48dfCC938f1a152EEF1d34787b3",
+  "chains": {
+    "bsc": {
+      "registry": {
+        "address": "0x35F519ECad8ea20A24699744ca9093de5d9D771a",
+        "receiptSuccess": true,
+        "codeBytes": 3402,
+        "codeHash": "0x43743cb24776624f3c22c66447762d8c111d85f0fd1a8bc778a730b0c76d7fcc",
+        "owner": "0x79e4C8b8E842a48dfCC938f1a152EEF1d34787b3",
+        "count": "0"
+      },
+      "settlement": {
+        "address": "0x7517eB7F4D84551D218907b07EEAE5c59793f7e3",
+        "receiptSuccess": true,
+        "codeBytes": 4735,
+        "codeHash": "0x2dbd79fec611f4c1e3df034e1e7a4e213e2cd92a2d625231b9ca54990224eae8",
+        "feeRecipient": "0x79e4C8b8E842a48dfCC938f1a152EEF1d34787b3",
+        "feeBps": "30",
+        "agentRegistry": "0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F"
+      },
+      "inventory": {
+        "address": "0x4d01852Df8Ce3638688ac8499DCDf328aFB6c149",
+        "receiptSuccess": true,
+        "codeBytes": 2451,
+        "codeHash": "0xfd796820aba2c8303dafa7244b6810d038d1f7092d453de89760f365324000f2"
+      },
+      "reserveFactory": {
+        "address": "0xffF743CD4C8BE21902949ad165FA0Ad5ab145b3D",
+        "receiptSuccess": true,
+        "codeBytes": 8697,
+        "codeHash": "0x882c89af7fdac77c2f81614da26ccbe87d99e8c128cd2f36b8b41e9e9c618f0d",
+        "version": "v2.3",
+        "nativeQuoteSupported": true
+      },
+      "commissionFactory": {
+        "address": "0x4f211353Af1030e716893A46003d4c6671631dcF",
+        "receiptSuccess": true,
+        "codeBytes": 11596,
+        "codeHash": "0x4b90188f8990d6f2596e66d8562f88b03c0aa2e715b023e2195f86e38e12707b"
+      }
+    },
+    "robinhood": {}
+  }
+}

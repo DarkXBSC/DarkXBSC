@@ -1,0 +1,83 @@
+{
+  "project": "tiger-genesis",
+  "generation": "2026-11-18",
+  "officialToken": null,
+  "chains": {
+    "bsc": {
+      "chainId": 56,
+      "name": "BNB Smart Chain",
+      "symbol": "BNB",
+      "rpc": "https://bsc-dataseed.bnbchain.org",
+      "explorer": "https://bscscan.com",
+      "contracts": {
+        "registry": {
+          "name": "TigerRegistry",
+          "address": "0x35F519ECad8ea20A24699744ca9093de5d9D771a",
+          "transactionHash": "0x8bb2df4a02eaca1c745049afa0bb5bdd489b9ead90c349c23006e9ac9227e944",
+          "block": 134325996,
+          "verified": true,
+          "verificationUrl": "https://repo.sourcify.dev/contracts/full_match/56/0x35F519ECad8ea20A24699744ca9093de5d9D771a/",
+          "verificationApi": "https://sourcify.dev/server/v2/contract/56/0x35F519ECad8ea20A24699744ca9093de5d9D771a"
+        },
+        "settlement": {
+          "name": "TigerSettlement",
+          "address": "0x7517eB7F4D84551D218907b07EEAE5c59793f7e3",
+          "transactionHash": "0xb6585a850ee7e92fbbc00c2a829bb83d41e6239b401efdb17be261eff9332905",
+          "block": 134326015,
+          "verified": true,
+          "verificationUrl": "https://repo.sourcify.dev/contracts/full_match/56/0x7517eB7F4D84551D218907b07EEAE5c59793f7e3/",
+          "verificationApi": "https://sourcify.dev/server/v2/contract/56/0x7517eB7F4D84551D218907b07EEAE5c59793f7e3"
+        },
+        "inventory": {
+          "name": "TigerInventory",
+          "address": "0x4d01852Df8Ce3638688ac8499DCDf328aFB6c149",
+          "transactionHash": "0x7fa925cffc0d0eb488f309cc992d6c08b563ecce7579e89b9145723265f48990",
+          "block": 134326031,
+          "verified": true,
+          "verificationUrl": "https://repo.sourcify.dev/contracts/full_match/56/0x4d01852Df8Ce3638688ac8499DCDf328aFB6c149/",
+          "verificationApi": "https://sourcify.dev/server/v2/contract/56/0x4d01852Df8Ce3638688ac8499DCDf328aFB6c149"
+        },
+        "reserveFactory": {
+          "name": "TigerReserveFactory",
+          "address": "0xffF743CD4C8BE21902949ad165FA0Ad5ab145b3D",
+          "transactionHash": "0xdfffb17d725d360598459987af2145d73d9d8c2f6818a14bb69ccee82f83332d",
+          "block": 134481777,
+          "verified": true,
+          "verificationUrl": "https://repo.sourcify.dev/contracts/full_match/56/0xffF743CD4C8BE21902949ad165FA0Ad5ab145b3D/",
+          "verificationApi": "https://sourcify.dev/server/v2/contract/56/0xffF743CD4C8BE21902949ad165FA0Ad5ab145b3D"
+        },
+        "commissionFactory": {
+          "name": "TigerCommissionFactory",
+          "address": "0x4f211353Af1030e716893A46003d4c6671631dcF",
+          "transactionHash": "0x72c269715548f7abfff2fbecdd4cc873659ea061216b2c99f2350f9d6c1769bc",
+          "block": 134498403,
+          "verified": true,
+          "verificationUrl": "https://repo.sourcify.dev/contracts/full_match/56/0x4f211353Af1030e716893A46003d4c6671631dcF/",
+          "verificationApi": "https://sourcify.dev/server/v2/contract/56/0x4f211353Af1030e716893A46003d4c6671631dcF"
+        }
+      },
+      "history": {
+        "reserveFactory": [
+          {
+            "name": "TigerReserveFactory",
+            "address": "0x31c33634cb640b41aE7Ea936f5cDB04fef770F0F",
+            "transactionHash": "0xa960ecbc0613835144256ada3fda8df8b953b28571eb32f9ebbbce606be8a81a",
+            "block": 134326047,
+            "verified": true,
+            "verificationUrl": "https://repo.sourcify.dev/contracts/full_match/56/0x31c33634cb640b41aE7Ea936f5cDB04fef770F0F/",
+            "verificationApi": "https://sourcify.dev/server/v2/contract/56/0x31c33634cb640b41aE7Ea936f5cDB04fef770F0F"
+          }
+        ]
+      }
+    },
+    "robinhood": {
+      "chainId": 4663,
+      "name": "Robinhood Chain",
+      "symbol": "ETH",
+      "rpc": "https://rpc.mainnet.chain.robinhood.com",
+      "explorer": "https://robinhoodchain.blockscout.com",
+      "contracts": {}
+    }
+  },
+  "brand": "Dark"
+}

@@ -1,0 +1,224 @@
+{
+  "bsc:registry": {
+    "address": "0x35F519ECad8ea20A24699744ca9093de5d9D771a",
+    "status": 202,
+    "verificationId": "c79944b7-79a3-4bc7-9084-e67aa1394e88",
+    "result": {
+      "isJobCompleted": true,
+      "verificationId": "c79944b7-79a3-4bc7-9084-e67aa1394e88",
+      "jobStartTime": "2026-11-18T14:19:59Z",
+      "jobFinishTime": "2026-11-18T14:20:00Z",
+      "compilationTime": "658",
+      "externalVerifications": {
+        "etherscan": {
+          "error": "Daily limit of 500 source code submissions reached"
+        }
+      },
+      "contract": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "56",
+        "address": "0x35F519ECad8ea20A24699744ca9093de5d9D771a",
+        "verifiedAt": "2026-11-18T14:20:00Z",
+        "matchId": "59472520"
+      }
+    },
+    "lookup": {
+      "matchId": "59472520",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-11-18T14:20:00Z",
+      "match": "exact_match",
+      "chainId": "56",
+      "address": "0x35F519ECad8ea20A24699744ca9093de5d9D771a"
+    },
+    "verified": true
+  },
+  "bsc:settlement": {
+    "address": "0x7517eB7F4D84551D218907b07EEAE5c59793f7e3",
+    "status": 202,
+    "verificationId": "c89843d6-4407-4ed3-a528-9b42ded94fd1",
+    "result": {
+      "isJobCompleted": true,
+      "verificationId": "c89843d6-4407-4ed3-a528-9b42ded94fd1",
+      "jobStartTime": "2026-11-18T14:20:02Z",
+      "jobFinishTime": "2026-11-18T14:20:04Z",
+      "compilationTime": "1181",
+      "externalVerifications": {
+        "etherscan": {
+          "error": "Daily limit of 500 source code submissions reached"
+        }
+      },
+      "contract": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "56",
+        "address": "0x7517eB7F4D84551D218907b07EEAE5c59793f7e3",
+        "verifiedAt": "2026-11-18T14:20:04Z",
+        "matchId": "59472521"
+      }
+    },
+    "lookup": {
+      "matchId": "59472521",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-11-18T14:20:04Z",
+      "match": "exact_match",
+      "chainId": "56",
+      "address": "0x7517eB7F4D84551D218907b07EEAE5c59793f7e3"
+    },
+    "verified": true
+  },
+  "bsc:inventory": {
+    "address": "0x4d01852Df8Ce3638688ac8499DCDf328aFB6c149",
+    "status": 202,
+    "verificationId": "227b1da6-5fa5-4f86-aa43-dfe8d120d993",
+    "result": {
+      "isJobCompleted": true,
+      "verificationId": "227b1da6-5fa5-4f86-aa43-dfe8d120d993",
+      "jobStartTime": "2026-11-18T14:20:04Z",
+      "jobFinishTime": "2026-11-18T14:20:05Z",
+      "compilationTime": "560",
+      "externalVerifications": {
+        "etherscan": {
+          "error": "Daily limit of 500 source code submissions reached"
+        }
+      },
+      "contract": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "56",
+        "address": "0x4d01852Df8Ce3638688ac8499DCDf328aFB6c149",
+        "verifiedAt": "2026-11-18T14:20:05Z",
+        "matchId": "59472523"
+      }
+    },
+    "lookup": {
+      "matchId": "59472523",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-11-18T14:20:05Z",
+      "match": "exact_match",
+      "chainId": "56",
+      "address": "0x4d01852Df8Ce3638688ac8499DCDf328aFB6c149"
+    },
+    "verified": true
+  },
+  "bsc:reserveFactory:0x31c33634cb640b41aE7Ea936f5cDB04fef770F0F": {
+    "address": "0x31c33634cb640b41aE7Ea936f5cDB04fef770F0F",
+    "status": 202,
+    "verificationId": "665fd9af-2ac0-42e5-8b66-b48ce782f63d",
+    "result": {
+      "isJobCompleted": true,
+      "verificationId": "665fd9af-2ac0-42e5-8b66-b48ce782f63d",
+      "jobStartTime": "2026-11-18T14:20:05Z",
+      "jobFinishTime": "2026-11-18T14:20:08Z",
+      "compilationTime": "1639",
+      "externalVerifications": {
+        "etherscan": {
+          "error": "Daily limit of 500 source code submissions reached"
+        }
+      },
+      "contract": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "56",
+        "address": "0x31c33634cb640b41aE7Ea936f5cDB04fef770F0F",
+        "verifiedAt": "2026-11-18T14:20:08Z",
+        "matchId": "59472524"
+      }
+    },
+    "lookup": {
+      "matchId": "59472524",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-11-18T14:20:08Z",
+      "match": "exact_match",
+      "chainId": "56",
+      "address": "0x31c33634cb640b41aE7Ea936f5cDB04fef770F0F"
+    },
+    "verified": true
+  },
+  "bsc:reserveFactory": {
+    "address": "0xffF743CD4C8BE21902949ad165FA0Ad5ab145b3D",
+    "status": 202,
+    "verificationId": "c4cdb84d-6123-4f27-9869-8d8732c9c121",
+    "result": {
+      "isJobCompleted": true,
+      "verificationId": "c4cdb84d-6123-4f27-9869-8d8732c9c121",
+      "jobStartTime": "2026-11-19T09:48:09Z",
+      "jobFinishTime": "2026-11-19T09:48:12Z",
+      "compilationTime": "1068",
+      "externalVerifications": {
+        "etherscan": {
+          "verificationId": "zennpsxfdufiprusnq5hwmi91nbeilymrfdmgv9hzjmgvxuzti",
+          "statusUrl": "https://api.etherscan.io/v2/api?chainid=56&module=contract&action=checkverifystatus&guid=zennpsxfdufiprusnq5hwmi91nbeilymrfdmgv9hzjmgvxuzti",
+          "explorerUrl": "https://bscscan.com//address/0xffF743CD4C8BE21902949ad165FA0Ad5ab145b3D",
+          "contractApiUrl": "https://api.etherscan.io/v2/api?chainid=56&module=contract&action=getabi&address=0xffF743CD4C8BE21902949ad165FA0Ad5ab145b3D"
+        }
+      },
+      "contract": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "56",
+        "address": "0xffF743CD4C8BE21902949ad165FA0Ad5ab145b3D",
+        "verifiedAt": "2026-11-19T09:48:12Z",
+        "matchId": "59515817"
+      }
+    },
+    "lookup": {
+      "matchId": "59515817",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-11-19T09:48:12Z",
+      "match": "exact_match",
+      "chainId": "56",
+      "address": "0xffF743CD4C8BE21902949ad165FA0Ad5ab145b3D"
+    },
+    "verified": true
+  },
+  "bsc:commissionFactory": {
+    "address": "0x4f211353Af1030e716893A46003d4c6671631dcF",
+    "status": 202,
+    "verificationId": "5c4911c9-2319-47c3-9c08-cb3e76c0ba3b",
+    "result": {
+      "isJobCompleted": true,
+      "verificationId": "5c4911c9-2319-47c3-9c08-cb3e76c0ba3b",
+      "jobStartTime": "2026-11-19T11:51:55Z",
+      "jobFinishTime": "2026-11-19T11:51:59Z",
+      "compilationTime": "1426",
+      "externalVerifications": {
+        "etherscan": {
+          "verificationId": "qkvgbrdb4uydqkrmyftdah7aruzhvrsvdzltsh26rxkzsbw3nk",
+          "statusUrl": "https://api.etherscan.io/v2/api?chainid=56&module=contract&action=checkverifystatus&guid=qkvgbrdb4uydqkrmyftdah7aruzhvrsvdzltsh26rxkzsbw3nk",
+          "explorerUrl": "https://bscscan.com//address/0x4f211353Af1030e716893A46003d4c6671631dcF",
+          "contractApiUrl": "https://api.etherscan.io/v2/api?chainid=56&module=contract&action=getabi&address=0x4f211353Af1030e716893A46003d4c6671631dcF"
+        }
+      },
+      "contract": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "56",
+        "address": "0x4f211353Af1030e716893A46003d4c6671631dcF",
+        "verifiedAt": "2026-11-19T11:51:59Z",
+        "matchId": "59520029"
+      }
+    },
+    "lookup": {
+      "matchId": "59520029",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-11-19T11:51:59Z",
+      "match": "exact_match",
+      "chainId": "56",
+      "address": "0x4f211353Af1030e716893A46003d4c6671631dcF"
+    },
+    "verified": true
+  }
+}
