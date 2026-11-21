@@ -1,7 +1,13 @@
 {
   "project": "tiger-genesis",
   "generation": "2026-11-18",
-  "officialToken": null,
+  "officialToken": {
+    "chainId": 56,
+    "address": "0x74b6E9dd0DFA02e4a98D1ced7CaaFaad68627777",
+    "name": "Dark",
+    "symbol": "Dark",
+    "decimals": 18
+  },
   "chains": {
     "bsc": {
       "chainId": 56,

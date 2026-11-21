@@ -1,5 +1,5 @@
 import { ArrowRight, Check, Download, RefreshCw } from "lucide-react";
-import { PageTitle, CopyText } from "../components/Frame";
+import { PageTitle, CopyText, OfficialTokenNotice } from "../components/Frame";
 import { useApp } from "../lib/context";
 const descriptions: Record<string, [string, string]> = {
   registry: [
@@ -43,8 +43,8 @@ export default function Contracts() {
       <PageTitle
         title={t("Contracts & source", "合约与源码")}
         description={t(
-          "A new deployment, with public source and receipts. Infrastructure is not a Dark token.",
-          "全新部署，提供公开源码和回执。基础设施合约不是 Dark 代币。",
+          "Look up the official token address and inspect the source and receipts for the BSC protocol contracts.",
+          "核对官方代币地址，查看 BSC 协议合约的公开源码与部署回执。",
         )}
         aside={
           <button className="button" onClick={() => void refresh()}>
@@ -53,8 +53,9 @@ export default function Contracts() {
           </button>
         }
       />
+      <OfficialTokenNotice />
       <div className="directory-toolbar">
-        <h2>{t("BSC deployments", "BSC 已部署合约")}</h2>
+        <h2>{t("BSC protocol contracts", "BSC 协议合约")}</h2>
         {config && (
           <span>
             {entries.length} {t("contracts", "个合约")}

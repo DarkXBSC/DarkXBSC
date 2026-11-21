@@ -6,7 +6,7 @@ import {
   Header,
   Footer,
   ScrollRail,
-  Notice,
+  OfficialTokenNotice,
   Status,
 } from "../components/Frame";
 import SignalCanvas from "../components/SignalCanvas";
@@ -38,7 +38,7 @@ export default function Home({ entry = false }: { entry?: boolean }) {
       <Header />
       <ScrollRail />
       <main className="home">
-        <Notice />
+        <OfficialTokenNotice />
         <Status />
         <section className="hero">
           <SignalCanvas />
@@ -111,9 +111,14 @@ export default function Home({ entry = false }: { entry?: boolean }) {
             <p>{t("Charged to the taker on settlement", "成交时由买方另付")}</p>
           </div>
           <div>
-            <strong>0</strong>
+            <strong>{config ? Number(Boolean(config.officialToken)) : "—"}</strong>
             <span>{t("OFFICIAL TOKENS ISSUED", "官方代币发行数")}</span>
-            <p>{t("No official Dark token exists", "Dark 尚未发行官方代币")}</p>
+            {config?.officialToken && (
+              <Link to="/app/contracts">
+                {t("View token contract", "查看代币合约")}
+                <ArrowRight size={13} />
+              </Link>
+            )}
           </div>
         </section>
         <section

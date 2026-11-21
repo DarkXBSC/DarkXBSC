@@ -1,6 +1,6 @@
 # Dark motion alignment — 2026-11-19
 
-Scope: user requests all desktop animation behaviors of asklionel.tech, across Dark's existing functional pages. Preserve deployed contracts, wallet/financial workflows, Dark identity, truthful counts and no-token notice. Local 5206 only. No mobile additions or diagonal arrows.
+Scope: user requests all desktop animation behaviors of asklionel.tech, across Dark's existing functional pages. Preserve deployed contracts, wallet/financial workflows, Dark identity, truthful counts and official token notice. Local 5206 only. No mobile additions or diagonal arrows.
 
 Reference evidence: workspace work/lionel-motion-20261118/reference, captured at 1440 × 1000. Public client assets inspected only to measure behavior; original site bundles, personal assets, awards and analytics are not redistributed.
 
@@ -42,7 +42,7 @@ Verification: compare same viewport and elapsed film checkpoints, actual hover/s
 
 The film clock starts at loading handover, not at the initial HTTP request. Fonts, module compilation and GPU warm-up can shift the recorded wall-time checkpoints. `film-timeline.json` in local review evidence reports both actual wall time and the scene clock; desktop-width captures use separate names from millisecond captures.
 
-Dark content, deployed-chain disclosures, uploaded art and existing form semantics replace the portfolio's personal content. The no-token notice adds its own document height. The award asset becomes a Dark replay control; the reference's mobile menu grammar is used only by the existing desktop More menu; game pipe motion becomes a chapter transition and explanatory process graphics. The portfolio game itself, personal photos, award identities, analytics and mobile layout are not shipped. NE diagonal arrow decorations are omitted under the user's explicit preference.
+Dark content, deployed-chain disclosures, uploaded art and existing form semantics replace the portfolio's personal content. The official token notice adds its own document height. The award asset becomes a Dark replay control; the reference's mobile menu grammar is used only by the existing desktop More menu; game pipe motion becomes a chapter transition and explanatory process graphics. The portfolio game itself, personal photos, award identities, analytics and mobile layout are not shipped. NE diagonal arrow decorations are omitted under the user's explicit preference.
 
 `#fff` is intentional solely for the difference-blended cursor brackets, whose displayed color depends on the surface under them. It is not a new page-surface palette. All diagrams are geometric process illustrations and are labelled as not live activity. Real addresses, prices, transaction amounts, signatures and input values are never scrambled.
 

@@ -4,6 +4,8 @@ Dark 是面向 BNB Smart Chain 的桌面工作台。发行人可以用自己的�
 
 [打开 Dark](https://darkwork.fun/) · [X 上的 DarkLBSC](https://x.com/DarkLBSC) · [用户操作教程](docs/user-guide.md) · [开发与运维手册](docs/operations.md)
 
+**Dark 官方代币已在 BNB Smart Chain 发行。** 链上名称和符号均为 `Dark`，合约地址为 `0x74b6E9dd0DFA02e4a98D1ced7CaaFaad68627777`。[在 BscScan 核对](https://bscscan.com/token/0x74b6E9dd0DFA02e4a98D1ced7CaaFaad68627777)
+
 ## 我们做了什么
 
 | 模块 | 用户能做什么 | 实现与核验 |
@@ -17,7 +19,7 @@ Dark 是面向 BNB Smart Chain 的桌面工作台。发行人可以用自己的�
 
 ### 当前运行状态
 
-2026-11-21 核对：发行网络为 BSC；Base 用于 USDC 支付。线上 X 公益每枚代币按 **25 USDT 一批**结算，支持 BSC 和 Base 的结算 Gas 代补。发行人的首买和发币 Gas 由发行钱包支付。币安 Pay 的 UID 商户付款当前关闭。Peer 现金付款需由买家执行并提供付款证明，首笔真实 X 现金到账仍待公开回执验证。Dark 尚未发行官方代币。线上能力随配置变化，可直接查看当前返回值。[实时能力](https://darkwork.fun/api/giving/capabilities) · [线上发布版本](https://darkwork.fun/release.json)
+2026-11-21 核对：发行网络为 BSC；Base 用于 USDC 支付。线上 X 公益每枚代币按 **25 USDT 一批**结算，支持 BSC 和 Base 的结算 Gas 代补。发行人的首买和发币 Gas 由发行钱包支付。币安 Pay 的 UID 商户付款当前关闭。Peer 现金付款需由买家执行并提供付款证明，首笔真实 X 现金到账仍待公开回执验证。线上能力随配置变化，可直接查看当前返回值。[实时能力](https://darkwork.fun/api/giving/capabilities) · [线上发布版本](https://darkwork.fun/release.json)
 
 ## 从哪里开始
 

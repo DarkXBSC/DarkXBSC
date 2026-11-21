@@ -30,7 +30,7 @@ TYPE: 操作标题 24–32px、数据 12–14px，避免巨型广告字。MATERI
 本轮依据 Bags 的首页、Trade、Launch 和 Earn 桌面页面调整布局。上文的 Pump 侧栏与左右分栏是早期方案。Dark 原创几何 D 和开场电影延续使用，首次进入结束后落在 Home。工作台改用本地 Open Runde、Archivo Black，保留深浅主题和中英文。
 
 - 66px 顶栏居中排列 Home、Launch、Trade、Giving、Docs、More tools。右侧保留搜索与钱包。页脚可进入合约与源码、教材、X、更多工具及关于，也可切换语言和主题。
-- Home 在居中标题与钱包按钮下，呈现 X 公益单批税额、BSC、Flap V3、已验证合约数和未发币公告。
+- Home 在居中标题与钱包按钮下，呈现 X 公益单批税额、BSC、Flap V3、已验证合约数和可复制的 BSC 官方代币地址。
 - Trade 在 32px 行情条之下排列独立滚动的 New、Soon、Bonded 三栏。New 与 Trending 切换各栏排序，资产行打开实际 K 线，搜索和回退状态标记数据来源。
 - Launch 采用 560px 单列。图片、名称与代码先行，随后填写受益人、底池、税率与首买。交易经模拟、确认及用户签名。
 - Giving 在 592px 居中卡片上分出回执查询与受益渠道。Bags 原站的收益数字、Solana 钱包与领取操作没有映射到 Dark。当前配置是每个币每批 25 USDT 的 X 公益自动结算，支付结果以实际凭证为准。

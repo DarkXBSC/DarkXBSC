@@ -21,7 +21,13 @@ export type Deployment = {
 };
 export type Config = {
   project: string;
-  officialToken: null;
+  officialToken: {
+    chainId: 56;
+    address: string;
+    name: string;
+    symbol: string;
+    decimals: number;
+  } | null;
   chains: Record<
     Chain,
     {

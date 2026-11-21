@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, Wallet } from "lucide-react";
+import { OfficialTokenNotice } from "../components/Frame";
 import { useApp } from "../lib/context";
 
 export default function Welcome() {
@@ -75,9 +76,7 @@ export default function Welcome() {
           </div>
         </dl>
       </div>
-      <p className="welcome-notice">
-        {t("Dark has not launched any token.", "Dark 尚未发行任何代币。")}
-      </p>
+      <OfficialTokenNotice />
     </section>
   );
 }

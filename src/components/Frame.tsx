@@ -12,19 +12,19 @@ import {
   ChevronDown,
   X,
   Wallet,
-  Info,
   Check,
   Copy,
 } from "lucide-react";
 import { useApp } from "../lib/context";
 import { short } from "../lib/chain";
 export function CopyText({ value }: { value: string }) {
+  const { t } = useApp();
   const [done, setDone] = useState(false);
   return (
     <button
       type="button"
       className="copy"
-      title="Copy"
+      title={done ? t("Copied", "已复制") : t("Copy address", "复制地址")}
       onClick={async () => {
         try {
           await navigator.clipboard.writeText(value);
@@ -40,19 +40,18 @@ export function CopyText({ value }: { value: string }) {
     </button>
   );
 }
-export function Notice() {
-  const { t } = useApp();
+export function OfficialTokenNotice() {
+  const { t, config } = useApp();
+  const token = config?.officialToken;
+  if (!token) return null;
   return (
-    <div className="token-notice">
-      <Info size={15} />
-      <b>{t("Dark has not launched any token.", "Dark 尚未发行任何代币。")}</b>
-      <span>
-        {t(
-          "There is no official token contract. Protocol contracts are infrastructure, not a Dark token.",
-          "目前没有官方代币合约地址。下列协议合约属于基础设施，并非 Dark 代币。",
-        )}
-      </span>
-    </div>
+    <section className="token-notice official-token" aria-label={t("Official token", "官方代币")}>
+      <b>{t(`Official token · ${token.name} (BSC)`, `官方代币 · ${token.name}（BSC）`)}</b>
+      <CopyText value={token.address} />
+      <a href={`${config.chains.bsc.explorer}/token/${token.address}`} target="_blank" rel="noreferrer">
+        {t("View on BscScan", "在 BscScan 查看")}
+      </a>
+    </section>
   );
 }
 export function Header() {

@@ -204,13 +204,12 @@ export default function Explore() {
             <div className="empty">
               <h2>{t("No matching projects", "没有匹配的项目")}</h2>
               <p>
-                {t(
-                  "No projects are registered here yet. Dark has not issued an official token.",
-                  "这里暂时没有登记项目，Dark 尚未发行官方代币。",
-                )}
+                {rows.length
+                  ? t("Try another search or filter.", "请更换搜索词或筛选条件。")
+                  : t("No projects have been registered yet.", "登记簿中暂无项目。")}
               </p>
               <Link to="/app/launch">
-                {t("Create the first project", "创建项目")}
+                {t("Create a project", "创建项目")}
                 <ArrowRight size={15} />
               </Link>
             </div>
