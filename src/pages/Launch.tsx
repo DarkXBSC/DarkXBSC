@@ -145,6 +145,10 @@ function LaunchFormView() {
       const initial = {
         ...blank,
         nomination,
+        beneficiaryKey: Array.from(
+          crypto.getRandomValues(new Uint8Array(32)),
+          (b) => b.toString(16).padStart(2, "0"),
+        ).join(""),
         route: preset ?? blank.route,
         quote: preset === "binance" ? BSC_USDT : ZeroAddress,
       };
@@ -186,6 +190,7 @@ function LaunchFormView() {
           route,
           quote,
           social: "",
+          beneficiaryKey: initial.beneficiaryKey,
           disclosure: {
             visibility: nomination
               ? "private"
@@ -242,14 +247,18 @@ function LaunchFormView() {
     }
     let active = true;
     setXChecking(true);
-    void checkRecipient(form.social, "x", nomination, form.disclosure).then(
-      (result) => {
-        if (active) {
-          setPayCheck(result);
-          setXChecking(false);
-        }
-      },
-    );
+    void checkRecipient(
+      form.social,
+      "x",
+      nomination,
+      form.disclosure,
+      form.beneficiaryKey,
+    ).then((result) => {
+      if (active) {
+        setPayCheck(result);
+        setXChecking(false);
+      }
+    });
     return () => {
       active = false;
     };
@@ -304,7 +313,7 @@ function LaunchFormView() {
     if (key !== "creator") setPublishConsent(false);
   };
   useEffect(() => {
-    const { social, nomination, ...draft } = form;
+    const { social, nomination, beneficiaryKey, ...draft } = form;
     try {
       localStorage.setItem("tiger-genesis:draft", JSON.stringify(draft));
     } catch {
@@ -548,6 +557,7 @@ function LaunchFormView() {
           form.route,
           nomination,
           form.disclosure,
+          form.beneficiaryKey,
         );
         if (
           checked.state !== "READY" ||
@@ -561,6 +571,7 @@ function LaunchFormView() {
               form.quote,
               nomination,
               form.disclosure,
+              form.beneficiaryKey,
             )) !== preview.params.beneficiary)
         ) {
           setPreview(null);

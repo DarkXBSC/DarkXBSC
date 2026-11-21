@@ -29,6 +29,7 @@ export type LaunchForm = {
   route: TaxRoute;
   social: string;
   disclosure?: BeneficiaryDisclosure;
+  beneficiaryKey?: string;
   nomination?: string;
   commissionShare?: string;
   creator: string;
@@ -179,6 +180,7 @@ export async function prepare(
       form.quote,
       form.nomination,
       form.disclosure,
+      form.beneficiaryKey,
     );
   }
   if ((await p.getCode(predicted)) !== "0x") throw Error("SALT_ALREADY_USED");

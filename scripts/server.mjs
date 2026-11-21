@@ -337,6 +337,7 @@ const server = http.createServer(async (req, res) => {
               input.recipient,
               input.nomination,
               input.disclosure,
+              input.beneficiaryKey,
             );
             if (!settlementActive()) {
               result.state = "VERIFIED";

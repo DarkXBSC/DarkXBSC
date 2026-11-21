@@ -230,11 +230,13 @@ for (const { viaNomination, visibility } of [
       quotesOK = false;
       await assert.rejects(svc.check("@Friend"), /X_QUOTE_UNAVAILABLE/);
       quotesOK = true;
+      const beneficiaryKey = randomBytes(32).toString("hex");
       const disclosure = visibility ? { visibility, purpose: "Animal rescue artwork" } : undefined;
-      const direct = await svc.check("@Friend", undefined, disclosure);
+      const direct = await svc.check("@Friend", undefined, disclosure, beneficiaryKey);
       let input = {
         recipient: "@Friend",
         disclosure,
+        beneficiaryKey,
         ticket: direct.ticket,
         salt,
         confirmed: true,
@@ -290,16 +292,16 @@ for (const { viaNomination, visibility } of [
           false,
         );
         nomination = row.id;
-        const check = await svc.check(undefined, nomination, disclosure);
+        const check = await svc.check(undefined, nomination, disclosure, beneficiaryKey);
         assert.notEqual(direct.ticket, check.ticket);
         await assert.rejects(
           svc.bind({ ...input, nomination }),
           /RECIPIENT_CHANGED/,
         );
-        input = { nomination, disclosure, ticket: check.ticket, salt, confirmed: true };
+        input = { nomination, disclosure, beneficiaryKey, ticket: check.ticket, salt, confirmed: true };
         userId = "90002";
         await assert.rejects(
-          svc.check(undefined, nomination, disclosure),
+          svc.check(undefined, nomination, disclosure, beneficiaryKey),
           /RECIPIENT_CHANGED/,
         );
         userId = "90001";
@@ -323,6 +325,12 @@ for (const { viaNomination, visibility } of [
           }),
           /RECIPIENT_CHANGED/,
         );
+      }
+      if (disclosure) {
+        const guessedKey = randomBytes(32).toString("hex");
+        const guessed = await svc.check(input.recipient, nomination, disclosure, guessedKey);
+        await assert.rejects(svc.bind({ ...input, beneficiaryKey: guessedKey, ticket: guessed.ticket }), /RECIPIENT_CHANGED/);
+        assert.equal(JSON.stringify(svc.status(token)).includes(beneficiaryKey), false);
       }
       recipient = route.address;
       assert.equal(route.token, token);

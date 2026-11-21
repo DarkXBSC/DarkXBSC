@@ -54,6 +54,7 @@ export async function checkRecipient(
   route: "binance" | "x" = "binance",
   nomination?: string,
   disclosure?: BeneficiaryDisclosure,
+  beneficiaryKey?: string,
 ): Promise<RecipientCheck> {
   try {
     const r = await fetch(
@@ -63,10 +64,10 @@ export async function checkRecipient(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
           nomination && route === "x"
-            ? { nomination, disclosure }
+            ? { nomination, disclosure, beneficiaryKey }
             : {
                 recipient: input.trim(),
-                ...(route === "x" ? { disclosure } : {}),
+                ...(route === "x" ? { disclosure, beneficiaryKey } : {}),
               },
         ),
         signal: AbortSignal.timeout(20000),
@@ -102,6 +103,7 @@ export async function bindXTax(
   quote: string,
   nomination?: string,
   disclosure?: BeneficiaryDisclosure,
+  beneficiaryKey?: string,
 ) {
   if (!ticket) throw Error("RECIPIENT_CHANGED");
   const res = await fetch("/api/giving/x/bind", {
@@ -114,6 +116,7 @@ export async function bindXTax(
       salt,
       confirmed: true,
       disclosure,
+      beneficiaryKey,
     }),
     signal: AbortSignal.timeout(20000),
   });

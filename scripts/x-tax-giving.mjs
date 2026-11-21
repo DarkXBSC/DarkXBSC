@@ -323,11 +323,13 @@ export function createXTaxGiving(env, deps = {}) {
           "hex",
         )
       : ticketFor(v);
-  function disclosureTicket(v, nomination, disclosure) {
+  function disclosureTicket(v, nomination, disclosure, beneficiaryKey) {
     const base = scopedTicket(v, nomination);
-    return disclosure ? mac("launch-disclosure", base + ":" + JSON.stringify(disclosure)).toString("hex") : base;
+    if (!disclosure) return base;
+    if (!/^[a-f0-9]{64}$/.test(beneficiaryKey || "")) throw Error("INVALID_DISCLOSURE");
+    return mac("launch-disclosure", base + ":" + JSON.stringify(disclosure) + ":" + beneficiaryKey).toString("hex");
   }
-  async function check(raw, nomination, options) {
+  async function check(raw, nomination, options, beneficiaryKey) {
     const v = nomination
       ? await nominations.resolve(nomination)
       : await identity(raw);
@@ -335,7 +337,7 @@ export function createXTaxGiving(env, deps = {}) {
     const q = await liveQuote(wallet(2147483646).address, minimum);
     return {
       state: enabled ? "READY" : "VERIFIED",
-      ...(enabled ? { ticket: disclosureTicket(v, nomination, disclosure) } : {}),
+      ...(enabled ? { ticket: disclosureTicket(v, nomination, disclosure, beneficiaryKey) } : {}),
       ...(!nomination ? { recipient: { handle: v.handle, profile: "https://x.com/" + v.handle, name: v.name, avatar: v.avatar } } : {}),
       ...(disclosure ? { disclosure } : {}),
       quote: {
@@ -352,13 +354,14 @@ export function createXTaxGiving(env, deps = {}) {
     confirmed,
     quote = BSC_USDT,
     disclosure: options,
+    beneficiaryKey,
   }) {
     if (!enabled) throw Error("X_TAX_UNAVAILABLE");
     const v = nomination
       ? await nominations.resolve(nomination)
       : await identity(recipient);
     const disclosure = launchDisclosure(options, v.handle, nomination);
-    if (confirmed !== true || ticket !== disclosureTicket(v, nomination, disclosure))
+    if (confirmed !== true || ticket !== disclosureTicket(v, nomination, disclosure, beneficiaryKey))
       throw Error("RECIPIENT_CHANGED");
     const asset = await poolAsset(quote);
     const token = predictTaxToken(salt);
