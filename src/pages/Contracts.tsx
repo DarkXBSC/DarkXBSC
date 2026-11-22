@@ -128,12 +128,6 @@ export default function Contracts() {
           </article>
         ))}
       </div>
-      <p className="note">
-        {t(
-          "Dark uses the Tiger contract names for source verification. Previous reserve factory deployments are listed below.",
-          "Dark 沿用 Tiger 合约名以便核对源码。储备金库工厂的历史部署列于下方。",
-        )}
-      </p>
       {config?.chains.bsc.history?.reserveFactory?.map((factory) => (
         <p key={factory.address} className="note">
           {t("Previous reserve factory", "旧版储备金库工厂")} ·{" "}
