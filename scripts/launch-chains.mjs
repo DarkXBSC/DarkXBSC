@@ -42,21 +42,17 @@ export function predictTaxToken(salt, id = 56) {
 // Preserve every existing route index (and its HD address), ciphertext and batch.
 // One ledger also keeps the gas sponsor's nonce journal shared across both chains.
 export function migrateRouteChains(db) {
-  if (db.prepare("PRAGMA table_info(routes)").all().some(c => c.name === "chain")) return;
+  const migrated = () => db.prepare("SELECT sql FROM sqlite_master WHERE name='routes'").get()?.sql.includes("4663");
+  if (migrated()) return;
   db.exec("BEGIN IMMEDIATE");
   try {
-    if (db.prepare("PRAGMA table_info(routes)").all().some(c => c.name === "chain")) {
-      db.exec("COMMIT");
-      return;
+    if (!migrated()) {
+      const chain = db.prepare("PRAGMA table_info(routes)").all().some(c => c.name === "chain") ? "chain" : "56";
+      db.exec(`CREATE TABLE routes_multi(idx INTEGER PRIMARY KEY,chain INTEGER NOT NULL DEFAULT 56 CHECK(chain IN (56,8453,4663)),token TEXT NOT NULL,address TEXT UNIQUE,identity TEXT,ticket TEXT,lastBlock INTEGER,received TEXT DEFAULT '0',issue TEXT DEFAULT '',UNIQUE(chain,token));
+        INSERT INTO routes_multi(idx,chain,token,address,identity,ticket,lastBlock,received,issue) SELECT idx,${chain},token,address,identity,ticket,lastBlock,received,issue FROM routes;
+        DROP TABLE routes;
+        ALTER TABLE routes_multi RENAME TO routes;`);
     }
-    db.exec(`
-    CREATE TABLE routes_multi(idx INTEGER PRIMARY KEY,chain INTEGER NOT NULL DEFAULT 56 CHECK(chain IN (56,8453)),token TEXT NOT NULL,address TEXT UNIQUE,identity TEXT,ticket TEXT,lastBlock INTEGER,received TEXT DEFAULT '0',issue TEXT DEFAULT '',UNIQUE(chain,token));
-    INSERT INTO routes_multi(idx,token,address,identity,ticket,lastBlock,received,issue) SELECT idx,token,address,identity,ticket,lastBlock,received,issue FROM routes;
-    DROP TABLE routes;
-    ALTER TABLE routes_multi RENAME TO routes;
-    COMMIT;`);
-  } catch (e) {
-    db.exec("ROLLBACK");
-    throw e;
-  }
+    db.exec("COMMIT");
+  } catch (e) { db.exec("ROLLBACK"); throw e; }
 }

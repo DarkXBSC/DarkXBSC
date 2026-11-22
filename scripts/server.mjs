@@ -92,7 +92,7 @@ function startSponsoredSettlement() {
     Object.entries(env).filter(
       ([k]) =>
         k.startsWith("X_TAX_") ||
-        ["BASE_RPC_URL", "RELAY_API_KEY", "X_API_BEARER_TOKEN"].includes(k),
+        ["BASE_RPC_URL", "ROBINHOOD_RPC_URL", "RELAY_API_KEY", "X_API_BEARER_TOKEN"].includes(k),
     ),
   );
   settlementWorker = new Worker(
@@ -241,7 +241,7 @@ const server = http.createServer(async (req, res) => {
             "Content-Type": "application/json",
             Origin: "https://darkwork.fun",
           },
-          ...(req.method === "POST" ? { body: await body(req, 4000) } : {}),
+          ...(req.method === "POST" ? { body: await body(req, u.pathname === "/api/giving/x/bind" ? 30000 : 4000) } : {}),
         },
       );
       return json(res, upstream.status, await upstream.json());
@@ -257,7 +257,7 @@ const server = http.createServer(async (req, res) => {
           xCheck: xGiving.canCheck === true,
           xIdentityProvider: xGiving.identityProvider,
           xMin: xGiving.minimum,
-          chains: [56, 8453],
+          chains: xGiving.ponsEnabled && sponsorAvailable() ? [56, 8453, 4663] : [56, 8453],
           xAutoNative: env.X_TAX_AUTO_NATIVE === "yes" && sponsorEnabled && sponsorAvailable(),
         });
       if (
@@ -337,7 +337,7 @@ const server = http.createServer(async (req, res) => {
             !req.headers["content-type"]?.startsWith("application/json")
           )
             return json(res, 403, { error: "LOCAL_ORIGIN_REQUIRED" });
-          const input = JSON.parse((await body(req, 1500)).toString());
+          const input = JSON.parse((await body(req, u.pathname === "/api/giving/x/bind" ? 30000 : 1500)).toString());
           if (u.pathname === "/api/giving/x/check") {
             const result = await xGiving.check(
               input.recipient,

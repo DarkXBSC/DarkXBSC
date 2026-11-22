@@ -37,6 +37,7 @@ export type BeneficiaryDisclosure = {
   purpose: string;
 };
 export type RecipientCheck = {
+  sponsorFunded?: boolean;
   recipient?: {
     handle: string;
     profile: string;
@@ -82,6 +83,7 @@ export async function checkRecipient(
       state: r.ok ? data.state : data.error,
       profile: data.profile,
       recipient: data.recipient,
+      sponsorFunded: data.sponsorFunded,
       disclosure: data.disclosure,
       post: data.post,
       ticket: data.ticket,
@@ -102,12 +104,13 @@ export async function bindXTax(
   recipient: string,
   ticket: string | undefined,
   salt: string,
-  predicted: string,
+  predicted: string | null,
   quote: string,
   nomination?: string,
   disclosure?: BeneficiaryDisclosure,
   beneficiaryKey?: string,
   chainId = 56,
+  pons?: { issuer: string; proof?: {to: string; data: string; value: string} },
 ) {
   if (!ticket) throw Error("RECIPIENT_CHANGED");
   const res = await fetch("/api/giving/x/bind", {
@@ -118,6 +121,7 @@ export async function bindXTax(
       ticket,
       quote,
       salt,
+      ...pons,
       confirmed: true,
       disclosure,
       beneficiaryKey,
@@ -129,8 +133,7 @@ export async function bindXTax(
   if (!res.ok) throw Error(binding.error);
   if (
     binding.ticket !== ticket ||
-    !isAddress(binding.token) ||
-    binding.token.toLowerCase() !== predicted.toLowerCase()
+    (predicted ? !isAddress(binding.token) || binding.token.toLowerCase() !== predicted.toLowerCase() : !(chainId === 4663 && pons && !pons.proof))
   )
     throw Error("RECIPIENT_CHANGED");
   return payBeneficiary(binding, quote, "xmoney-tax", chainId);

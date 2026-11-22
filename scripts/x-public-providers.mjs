@@ -165,7 +165,7 @@ export async function nearStatus(cash, evidence) {
   return {
     requestId: "near:" + q.correlationId,
     status: state,
-    originChainId: 56,
+    originChainId: q.sourceAsset === "nep141:hood.omft.near" ? 4663 : 56,
     destinationChainId: 8453,
     settledAmount: result.outputAmount,
     inTxHashes: [evidence.hash],

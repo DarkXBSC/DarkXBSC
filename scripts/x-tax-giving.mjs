@@ -43,6 +43,7 @@ import { createGasSponsor, prepareRouteGas } from "./x-tax-gas.mjs";
 import { BSC_USDT } from "./binance-giving.mjs";
 import { USDC, validatePlan } from "./peer-pay.mjs";
 
+import { createPonsBook, ponsQuote } from "./pons-giving.mjs";
 import { launchChain, taxClone, predictTaxToken, migrateRouteChains } from "./launch-chains.mjs";
 export { predictTaxToken } from "./launch-chains.mjs";
 const transfer = new Interface([
@@ -205,11 +206,19 @@ export function createXTaxGiving(env, deps = {}) {
       throw e;
     }
   }
-  const wallet = (i) => root.derivePath("m/44'/60'/0'/0/" + i);
+  const rhRpc = deps.robinhood || new JsonRpcProvider(env.ROBINHOOD_RPC_URL || "https://rpc.mainnet.chain.robinhood.com", 4663);
+  const ponsEnabled = useNear && env.X_TAX_GAS_SPONSOR === "deployer";
+  const configFor = id => Number(id) === 4663 ? { id:4663, decimals:6, stableSymbol:"USDC" } : launchChain(id);
+  const pons = createPonsBook({ db, mac, source:rhRpc, base:baseRpc, cash, atomic });
+  const wallet = (i) => {
+    const row = pons.row(i);
+    if (row) return pons.recipient(db.prepare("SELECT ticket FROM routes WHERE idx=?").get(i).ticket,row.salt,row.issuer);
+    return root.derivePath("m/44'/60'/0'/0/" + i);
+  };
   const conversions = conversionBook(db);
-  const providerFor = (chain) => Number(chain) === 8453 ? baseRpc : bscRpc;
-  const minimumFor = (chain) => positiveUnits(env.X_TAX_MIN_USDT || "25", launchChain(chain).decimals);
-  const capFor = (chain) => positiveUnits(env.X_TAX_MAX_USDT || env.X_TAX_MIN_USDT || "25", launchChain(chain).decimals);
+  const providerFor = (chain) => Number(chain) === 4663 ? rhRpc : Number(chain) === 8453 ? baseRpc : bscRpc;
+  const minimumFor = (chain) => positiveUnits(env.X_TAX_MIN_USDT || "25", configFor(chain).decimals);
+  const capFor = (chain) => positiveUnits(env.X_TAX_MAX_USDT || env.X_TAX_MIN_USDT || "25", configFor(chain).decimals);
   let poolCache,
     poolTime = 0;
   async function poolAsset(raw, chainId = 56) {
@@ -242,7 +251,7 @@ export function createXTaxGiving(env, deps = {}) {
     ? createGasSponsor({
         db,
         key: deps.gasKey,
-        providers: { 56: bscRpc, 8453: baseRpc },
+        providers: { 56: bscRpc, 8453: baseRpc, 4663:rhRpc },
         routeAddress: (idx) => {
           const address = wallet(idx).address;
           if (
@@ -252,10 +261,11 @@ export function createXTaxGiving(env, deps = {}) {
             throw Error("X_GAS_REVIEW");
           return address;
         },
-        reservedNative: (idx, chain) => db.prepare("SELECT chain FROM routes WHERE idx=?").get(idx)?.chain === chain ? conversions.reserve(idx) : 0n,
-        authorizedNative: (idx, raw, chain) => db.prepare("SELECT chain FROM routes WHERE idx=?").get(idx)?.chain === chain && conversions.active(idx)?.raw === raw,
+        reservedNative: (idx, chain) => chain === 4663 ? pons.reserved(idx) : db.prepare("SELECT chain FROM routes WHERE idx=?").get(idx)?.chain === chain ? conversions.reserve(idx) : 0n,
+        authorizedNative: (idx, raw, chain) => chain === 4663 ? pons.authorized(idx,raw) : db.prepare("SELECT chain FROM routes WHERE idx=?").get(idx)?.chain === chain && conversions.active(idx)?.raw === raw,
         limits: {
           56: parseUnits(env.X_TAX_GAS_LIMIT_BNB || "0.0001", 18),
+          4663: parseUnits(env.X_TAX_GAS_LIMIT_ETH || "0.0001", 18),
           8453: parseUnits(env.X_TAX_GAS_LIMIT_ETH || "0.0001", 18),
         },
       })
@@ -324,22 +334,24 @@ export function createXTaxGiving(env, deps = {}) {
     return mac("launch-disclosure", base + ":" + JSON.stringify(disclosure) + ":" + beneficiaryKey).toString("hex");
   }
   async function check(raw, nomination, options, beneficiaryKey, chainId = 56) {
-    const cfg = launchChain(chainId);
+    const cfg = configFor(chainId);
     chainId = cfg.id;
+    if (chainId===4663 && !ponsEnabled) throw Error("X_TAX_UNAVAILABLE");
     const v = nomination
       ? await nominations.resolve(nomination)
       : await identity(raw);
     const disclosure = launchDisclosure(options, v.handle, nomination);
     const amount = minimumFor(chainId);
-    const q = chainId === 56 ? await liveQuote(wallet(2147483646).address, amount) : { outputAmount: amount };
+    const q = chainId === 4663 ? await ponsQuote(cash,baseRpc,wallet(2147483646).address,amount) : chainId === 56 ? await liveQuote(wallet(2147483646).address, amount) : { outputAmount: amount };
     return {
       state: enabled ? "READY" : "VERIFIED",
       ...(enabled ? { ticket: disclosureTicket(v, nomination, disclosure, beneficiaryKey, chainId) } : {}),
       ...(!nomination ? { recipient: { handle: v.handle, profile: "https://x.com/" + v.handle, name: v.name, avatar: v.avatar } } : {}),
       ...(disclosure ? { disclosure } : {}),
+      ...(chainId === 4663 ? {sponsorFunded: (await rhRpc.getBalance(getAddress(JSON.parse(readFileSync("deployments/inspection.json")).deployer))) > 0n} : {}),
       quote: {
-        inputUSDT: formatUnits(amount, cfg.decimals),
-        inputSymbol: cfg.stableSymbol,
+        inputUSDT: chainId === 4663 ? formatUnits(q.inputAmount,18) : formatUnits(amount, cfg.decimals),
+        inputSymbol: chainId === 4663 ? "ETH" : cfg.stableSymbol,
         chainId,
         minimumUSDC: formatUnits(q.outputAmount, 6),
       },
@@ -350,14 +362,15 @@ export function createXTaxGiving(env, deps = {}) {
     nomination,
     ticket,
     salt,
-    confirmed,
+    confirmed, issuer, proof,
     quote = BSC_USDT,
     disclosure: options,
     beneficiaryKey,
     chainId = 56,
   }) {
-    const cfg = launchChain(chainId);
+    const cfg = configFor(chainId);
     chainId = cfg.id;
+    if (chainId===4663 && !ponsEnabled) throw Error("X_TAX_UNAVAILABLE");
     const sourceRpc = providerFor(chainId);
     if (!enabled) throw Error("X_TAX_UNAVAILABLE");
     const v = nomination
@@ -366,8 +379,13 @@ export function createXTaxGiving(env, deps = {}) {
     const disclosure = launchDisclosure(options, v.handle, nomination);
     if (confirmed !== true || ticket !== disclosureTicket(v, nomination, disclosure, beneficiaryKey, chainId))
       throw Error("RECIPIENT_CHANGED");
-    const asset = await poolAsset(quote, chainId);
-    const token = predictTaxToken(salt, chainId);
+    const rh = chainId === 4663;
+    if (rh && (quote !== "0x0000000000000000000000000000000000000000" || !disclosure)) throw Error("RECIPIENT_CHANGED");
+    const asset = rh ? {address:quote} : await poolAsset(quote, chainId);
+    const dedicated = rh ? pons.recipient(ticket,salt,issuer).address : null;
+    if (rh && !proof) return {ticket,address:dedicated,asset:quote,chainId,rail:"xmoney-tax"};
+    const verified = rh ? await pons.verifyRequest({salt,issuer,proof},dedicated) : null;
+    const token = verified?.token ?? predictTaxToken(salt, chainId);
     const prev = db.prepare("SELECT * FROM routes WHERE token=? AND chain=?").get(token, chainId);
     const block =
       prev?.lastBlock ?? (await sourceRpc.getBlock("finalized")).number;
@@ -378,10 +396,7 @@ export function createXTaxGiving(env, deps = {}) {
       if (existing) {
         if (
           existing.ticket !== ticket ||
-          !eq(
-            conversions.assetOf(existing.idx)?.asset ?? cfg.stable,
-            asset.address,
-          )
+          (rh ? existing.address !== dedicated : !eq(conversions.assetOf(existing.idx)?.asset ?? cfg.stable, asset.address))
         )
           throw Error("RECIPIENT_CHANGED");
         return existing;
@@ -389,11 +404,12 @@ export function createXTaxGiving(env, deps = {}) {
       const idx = Number(
         db.prepare("SELECT COALESCE(MAX(idx),-1)+1 AS n FROM routes").get().n,
       );
-      const address = wallet(idx).address;
+      const address = dedicated ?? wallet(idx).address;
       db.prepare(
         "INSERT INTO routes(idx,token,address,identity,ticket,lastBlock,chain) VALUES(?,?,?,?,?,?,?)",
       ).run(idx, token, address, seal({ ...v, disclosure }), ticket, block, chainId);
-      if (!eq(asset.address, cfg.stable)) conversions.register(idx, asset, block);
+      if (rh) pons.add(idx,salt,issuer,verified.curve);
+      else if (!eq(asset.address, cfg.stable)) conversions.register(idx, asset, block);
       if (nomination)
         db.prepare(
           "INSERT INTO nominationRoutes(token,nomination,chain) VALUES(?,?,?)",
@@ -530,7 +546,7 @@ export function createXTaxGiving(env, deps = {}) {
     return v;
   }
   async function runRoute(r) {
-    const cfg = launchChain(r.chain);
+    const cfg = configFor(r.chain);
     const minimum = minimumFor(r.chain), cap = capFor(r.chain);
     const b = db
       .prepare(
@@ -791,11 +807,19 @@ export function createXTaxGiving(env, deps = {}) {
       // Resume previously committed gas transfers, even when another route is
       // waiting on the same sponsor nonce. Each route records its own issue.
       if (sponsor)
-        await Promise.allSettled([sponsor.resume(56), sponsor.resume(8453)]);
+        await Promise.allSettled([sponsor.resume(56), sponsor.resume(8453), ...(ponsEnabled ? [sponsor.resume(4663)] : [])]);
       for (const r of db.prepare("SELECT * FROM routes").all()) {
         try {
           const sourceRpc = providerFor(r.chain);
           if (!ends.has(r.chain)) ends.set(r.chain, (await sourceRpc.getBlock("finalized")).number);
+          if(r.chain===4663) {
+            if(!ponsEnabled || (await rhRpc.getNetwork()).chainId!==4663n) throw Error("X_CHAIN_MISMATCH");
+            await pons.scan(r,ends.get(r.chain));
+            if(db.prepare("SELECT 1 FROM batches WHERE route=? AND stage!='paid'").get(r.idx)) await runRoute(r);
+            else await pons.run(r,{wallet:wallet(r.idx),sponsor,minimum:minimumFor(4663),identity:sameIdentity});
+            issue(r.idx,"");
+            continue;
+          }
           await scan(r, ends.get(r.chain));
           const fresh = db
             .prepare("SELECT * FROM routes WHERE idx=?")
@@ -863,7 +887,7 @@ export function createXTaxGiving(env, deps = {}) {
     }
   }
   function status(address, chainId = 56) {
-    const cfg = launchChain(chainId);
+    const cfg = configFor(chainId);
     const r = db
       .prepare("SELECT * FROM routes WHERE chain=? AND (address=? OR token=?)")
       .get(cfg.id, getAddress(address), getAddress(address));
@@ -875,6 +899,7 @@ export function createXTaxGiving(env, deps = {}) {
     const disclosure = payee.disclosure || { visibility: "private", purpose: "" };
     return {
       rail: "xmoney-tax",
+      ...(cfg.id===4663 ? {pons:pons.status(r.idx)} : {}),
       chainId: cfg.id,
       stableSymbol: cfg.stableSymbol,
       disclosure: {
@@ -897,6 +922,7 @@ export function createXTaxGiving(env, deps = {}) {
   return {
     enabled,
     canCheck: true,
+    ponsEnabled,
     identityProvider: useFx ? "FxEmbed" : "X API",
     check,
     nominations,

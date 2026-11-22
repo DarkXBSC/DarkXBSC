@@ -433,7 +433,7 @@ const errors: Record<string, [string, string]> = {
   PONS_WALLET_INELIGIBLE: ["Pons has not enabled launches for this wallet.", "Pons 当前未向此钱包开放发行。"],
   PONS_TAX_LIMIT: ["The creator tax exceeds the current Pons maximum.", "创建者税率超出 Pons 当前上限。"],
   PONS_ETH_REQUIRED: ["Your wallet needs ETH on Robinhood Chain for the launch fee, first buy and gas.", "钱包中的 Robinhood Chain ETH 不足以支付发行费、首买和 Gas。"],
-  PONS_WALLET_ROUTE: ["Choose the ETH pool and a fee recipient wallet on Robinhood.", "请在 Robinhood 选择 ETH 底池并设置费用接收钱包。"],
+  PONS_WALLET_ROUTE: ["Choose the Robinhood ETH pool and select a wallet or X Money giving.", "请在 Robinhood 选择 ETH 底池，并选择接收钱包或 X Money 公益。"],
   PONS_FIRST_BUY_TOO_SMALL: ["Increase the first buy or set it to zero.", "请提高首买金额或将其设为零。"],
   ROUTE_BSC_ONLY: ["This tax route currently supports BSC. Base supports X giving and wallet recipients.", "此税收渠道目前支持 BSC。Base 支持 X 公益和钱包收款。"],
   QUOTE_DISABLED: [

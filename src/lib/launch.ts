@@ -96,7 +96,7 @@ export async function prepare(
     (!isAddress(form.creator) || form.creator === ZeroAddress)
   )
     throw Error("INVALID_ADDRESS");
-  if (form.chain === "robinhood") return preparePons(form, config, account, buyTax, fingerprint(form));
+  if (form.chain === "robinhood") return preparePons(form, config, account, buyTax, fingerprint(form), payTicket);
   if (!["bsc", "base"].includes(form.chain)) throw Error("UNSUPPORTED_LAUNCH_CHAIN");
   if (form.chain === "base" && !["x", "wallet"].includes(form.route)) throw Error("ROUTE_BSC_ONLY");
   const protocol = flapFor(config, form.chain);

@@ -25,6 +25,7 @@ type Flow = {
   address: string;
   block: number;
   received?: string;
+  pons?: { credited:string;claimed:string;available:string;stage:string;lastBaseHash?:string };
   conversion?: {
     symbol: string;
     earned: string;
@@ -56,9 +57,9 @@ export default function Impact() {
   const app = useApp(),
     { config, account, t } = app,
     [params, setParams] = useSearchParams();
-  const chain = params.get("chain") === "base" ? "base" : "bsc";
-  const chainLabel = chain === "base" ? "Base" : "BSC";
-  const stableSymbol = chain === "base" ? "USDC" : "USDT";
+  const chain = params.get("chain") === "robinhood" ? "robinhood" : params.get("chain") === "base" ? "base" : "bsc";
+  const chainLabel = chain === "robinhood" ? "Robinhood" : chain === "base" ? "Base" : "BSC";
+  const stableSymbol = chain === "bsc" ? "USDT" : "USDC";
   const { hash } = useLocation();
   const panel =
     params.get("view") === "nominations"
@@ -119,6 +120,22 @@ export default function Impact() {
       const p = rpc(chain),
         block = await p.getBlockNumber(),
         at = { blockTag: block };
+      if(chain==="robinhood") {
+        const response=await fetch("/api/giving/x/status?chainId=4663&address="+token);
+        if(!response.ok) throw Error();
+        const x=await response.json();
+        if(x.chainId!==4663 || !x.pons || x.rail!=="xmoney-tax")throw Error();
+        if(hashInput.trim()){
+          const receipt=await p.getTransactionReceipt(hashInput.trim());
+          const iface=new Interface(await abi("PonsFactoryV2"));
+          if(!receipt || receipt.status!==1 || await receipt.confirmations()<2 || !receipt.logs.some(log=>{
+            if(getAddress(log.address)!==getAddress(config.protocols.pons.factory)) return false;
+            const event=iface.parseLog(log);return event?.name==="TokenLaunched" && event.args.token===getAddress(x.token);
+          })) throw Error();
+        }
+        if(n===seq.current)setView({kind:"xmoney",address:x.address,block:x.lastBlock,disclosure:x.disclosure,received:x.received,paid:x.paid,status:x.stage,issue:x.issue,pons:x.pons});
+        return;
+      }
       const portal = new Contract(
         flapFor(config, chain).vaultPortal,
         await abi("IVaultPortal"),
@@ -514,7 +531,7 @@ export default function Impact() {
                   void inspect();
                 }}
               >
-                <label>{t("Network", "网络")}<select value={chain} onChange={e => { reset(); const next = new URLSearchParams(params); next.set("chain", e.target.value); next.delete("token"); next.delete("tx"); setInput(""); setTx(""); setParams(next); }}><option value="bsc">BSC</option><option value="base">Base</option></select></label>
+                <label>{t("Network", "网络")}<select value={chain} onChange={e => { reset(); const next = new URLSearchParams(params); next.set("chain", e.target.value); next.delete("token"); next.delete("tx"); setInput(""); setTx(""); setParams(next); }}><option value="bsc">BSC</option><option value="base">Base</option><option value="robinhood">Robinhood</option></select></label>
                 <label>
                   {t("Flap token or collection address", "Flap 代币或归集地址")}
                   <input
@@ -597,11 +614,17 @@ export default function Impact() {
                         <p>{view.disclosure.purpose}</p>
                       )}
                       <p>
-                        {view.conversion
+                        {view.pons ? t("Received on Base","Base 实际到账") : view.conversion
                           ? t("Confirmed conversion proceeds", "已核验兑换所得")
                           : t("Confirmed Flap tax", "已确认 Flap 税收")}{" "}
                         {view.received} {stableSymbol}
                       </p>
+                      {view.pons && <div>
+                        <p>{t("Credited by Pons", "Pons 已归集")} {view.pons.credited} ETH · {t("Claimed by Dark","Dark 已领取")} {view.pons.claimed} ETH</p>
+                        <p>{t("Available for bridging","可跨链余额")} {view.pons.available} ETH</p>
+                        <p>{view.pons.stage==="awaiting-operator" ? t("Waiting for the Pons operator to convert pool fees","交易池费用等待 Pons 操作方兑换") : view.pons.stage==="awaiting-sweep" ? t("Waiting for Pons to sweep fees","等待 Pons 归集费用") : view.pons.stage==="sweep" ? t("Sweeping creator fees","正在归集创建者费用") : view.pons.stage==="claim" ? t("Claiming ETH","正在领取 ETH") : ["deposit","bridge"].includes(view.pons.stage) ? t("Bridging to Base","正在跨链至 Base") : t("Collecting for the next batch","等待下一批结算")}</p>
+                        {view.pons.lastBaseHash && <a href={chainInfo.base.explorer+"/tx/"+view.pons.lastBaseHash} target="_blank" rel="noreferrer">{t("Base USDC receipt","Base USDC 到账回执")}</a>}
+                      </div>}
                       {view.conversion && (
                         <div>
                           <p>

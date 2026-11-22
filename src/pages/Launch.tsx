@@ -115,6 +115,7 @@ function LaunchFormView() {
   const operation = useRef(false);
   const [payCheck, setPayCheck] = useState<RecipientCheck | null>(null);
   const [xEnabled, setXEnabled] = useState<boolean | null>(null);
+  const [ponsGiving,setPonsGiving]=useState(false);
   const [xCanCheck, setXCanCheck] = useState(false);
   const [xIdentityProvider, setXIdentityProvider] = useState("");
   const [poolConversion, setPoolConversion] = useState(false);
@@ -132,6 +133,7 @@ function LaunchFormView() {
       .then((r) => {
         setMerchant(r.uid === true);
         setXEnabled(r.xTax === true);
+        setPonsGiving(r.chains?.includes(4663) === true);
         setXCanCheck(r.xCheck === true || r.xTax === true);
         setXIdentityProvider(
           r.xIdentityProvider === "FxEmbed" ? "FxEmbed" : "X API",
@@ -188,13 +190,13 @@ function LaunchFormView() {
         const defaultQuote = route === "binance" ? BSC_USDT : ZeroAddress;
         const quote =
           preset === "binance" ? BSC_USDT : (savedQuote ?? defaultQuote);
-        const pons = draft.chain === "robinhood" && !preset;
+        const pons = draft.chain === "robinhood" && (!preset || preset === "x");
         const chain = pons ? "robinhood" : draft.chain === "base" ? "base" : "bsc";
         return {
           ...initial,
           ...draft,
           chain,
-          route: pons ? "wallet" : chain === "base" && !["x", "wallet"].includes(route) ? "x" : route,
+          route: pons ? (route === "x" ? "x" : "wallet") : chain === "base" && !["x", "wallet"].includes(route) ? "x" : route,
           quote: pons ? ZeroAddress : quote,
           ...(preset && preset !== draft.route ? { cid: "", image: "" } : {}),
           social: "",
@@ -251,10 +253,10 @@ function LaunchFormView() {
   const chainLabel = isPons ? "Robinhood" : form.chain === "base" ? "Base" : "BSC";
   const protocolLabel = isPons ? "Pons V2" : "Flap V3";
   const stableAddress = form.chain === "base" ? BASE_USDC : BSC_USDT;
-  const stableSymbol = form.chain === "base" ? "USDC" : "USDT";
+  const stableSymbol = form.chain === "bsc" ? "USDT" : "USDC";
   const stablePool = form.route === "x" || form.route === "binance";
   const compatiblePool =
-    !stablePool ||
+    !stablePool || (isPons && form.route === "x" && form.quote === ZeroAddress) ||
     form.quote.toLowerCase() === stableAddress.toLowerCase() ||
     (form.route === "x" && poolConversion);
   useEffect(() => {
@@ -298,7 +300,7 @@ function LaunchFormView() {
     xRetry,
   ]);
   const payReady =
-    payCheck?.state === "READY" &&
+    (!isPons || ponsGiving) && payCheck?.state === "READY" &&
     payCheck.input === (nomination || form.social) &&
     !!payCheck.ticket;
   const generation = useRef(0);
@@ -380,12 +382,12 @@ function LaunchFormView() {
     return () => abort.abort();
   }, [quoteRetry, form.chain]);
   function changeChain(chain: LaunchChain) {
-    if (chain === form.chain || (nomination && chain === "robinhood") || working || pending || busy) return;
+    if (chain === form.chain || working || pending || busy) return;
     generation.current++;
     setPayCheck(null); setXConsent(false); setPublishConsent(false);
     setPreview(null); setStep(1); setFilter("all"); setQ(""); setQuotes([]);
     setForm(f => {
-      const route = chain === "robinhood" ? "wallet"
+      const route = chain === "robinhood" ? (f.route === "x" ? "x" : "wallet")
         : chain === "base" && !["x", "wallet"].includes(f.route) ? "x" : f.route;
       return { ...f, chain, quote: ZeroAddress, firstBuy: "0", route,
         ...(route !== f.route ? { cid: "", image: "", social: "" } : {}) };
@@ -529,6 +531,7 @@ function LaunchFormView() {
       if (!identityReady || !selectedQuote) throw Error("INVALID_TOKEN_NAME");
       const buyTax = bps(form.buyTax),
         sellTax = isPons ? buyTax : bps(form.sellTax);
+      if (isPons && form.route === "x" && !buyTax) throw Error("RESERVE_REQUIRES_TAX");
       if (!isPons && !buyTax && !sellTax) throw Error("ZERO_TAX_UNAVAILABLE");
       if (
         !isPons && (!/^\d+$/.test(form.taxDays) ||
@@ -542,6 +545,7 @@ function LaunchFormView() {
         (!isAddress(form.creator) || form.creator === ZeroAddress)
       )
         throw Error("INVALID_ADDRESS");
+      if(isPons && form.route==="x" && !payReady) throw Error("X_TAX_CHECK_REQUIRED");
       if (isPons) await checkPonsFunding(config, account, buyTax, form.firstBuy);
       const uploaded = await upload();
       if (uploaded.chain !== "robinhood" && uploaded.quote !== ZeroAddress && Number(uploaded.firstBuy) > 0) {
@@ -620,6 +624,7 @@ function LaunchFormView() {
               form.disclosure,
               form.beneficiaryKey,
               network.id,
+              isPons ? {issuer:account,proof:preview.request} : undefined,
             )) !== preview.params.beneficiary)
         ) {
           setPreview(null);
@@ -772,8 +777,15 @@ function LaunchFormView() {
       : form.route === "wallet"
         ? form.creator || t("Connected wallet", "连接的钱包")
         : channels.find((c) => c.id === form.route)?.full;
+  const sponsorNotice = isPons && form.route === "x" && payCheck?.sponsorFunded === false && (
+    <p role="status">{t(
+      "Robinhood gas funding is pending. Fees can accrue. Automatic settlement will start after the sponsor wallet receives ETH.",
+      "Robinhood 代付钱包待补 ETH。发币后费用可以累计，自动结算将在 Gas 到账后执行。",
+    )}</p>
+  );
   const shareHint =
-    isPons ? t("Pons credits fees to this recipient after a sweep. The recipient can claim ETH from the Pons fee escrow.", "Pons 归集费用后，指定的接收地址可从 Pons 费用托管合约领取 ETH。")
+    isPons && form.route === "x" ? t("Pons credits creator fees in ETH. Dark claims them, bridges each batch to Base USDC, then opens the X Money payout.", "Pons 归集创建者费用后，Dark 自动领取 ETH，逐批跨链为 Base USDC，再发起 X Money 付款。")
+    : isPons ? t("Pons credits fees to this recipient after a sweep. The recipient can claim ETH from the Pons fee escrow.", "Pons 归集费用后，指定的接收地址可从 Pons 费用托管合约领取 ETH。")
     : form.route === "commission"
       ? t(
           "A share of net tax received funds commissions. The selected author is paid in the pool asset.",
@@ -824,7 +836,7 @@ function LaunchFormView() {
         >
           {(["bsc", "base", "robinhood"] as const).map(chain => (
             <button type="button" key={chain} aria-pressed={form.chain === chain}
-              disabled={!!working || busy || pending || !!completed || (!!nomination && chain === "robinhood")}
+              disabled={!!working || busy || pending || !!completed}
               onClick={() => changeChain(chain)}>
               {chain === "bsc" && <BnbMark />}{chain === "base" && <span className="base-mark" />}
               {chain === "bsc" ? "BSC" : chain === "base" ? "Base" : "Robinhood"}
@@ -839,7 +851,7 @@ function LaunchFormView() {
         <nav className="issue-steps" aria-label={t("Launch steps", "发行步骤")}>
           {[
             [1, t("Your Meme", "Meme 资料")],
-            [2, isPons ? t("Creator fees", "创建者费用") : t("Tax & privacy", "税收与隐私")],
+            [2, isPons ? t("Creator fees & giving", "创建者费用与公益") : t("Tax & privacy", "税收与隐私")],
             [3, t("Review & launch", "确认发行")],
           ].map(([n, label]) => (
             <button
@@ -1259,7 +1271,7 @@ function LaunchFormView() {
             <h2 id="issue-share-title">{t("share fees", "分配交易税")}</h2>
             <div className="issue-channels">
               {channels
-                .filter((c) => (isPons ? ["wallet"] : form.chain === "base" ? ["x", "wallet"] : ["x", "commission", "wallet"]).includes(c.id))
+                .filter((c) => (isPons ? ["x","wallet"] : form.chain === "base" ? ["x", "wallet"] : ["x", "commission", "wallet"]).includes(c.id))
                 .map(({ id, label, full, icon }) => (
                   <button
                     type="button"
@@ -1337,7 +1349,7 @@ function LaunchFormView() {
                 </small>
               </label>
             )}
-            {!isPons && (nomination ? (
+            {(nomination ? (
               <div className="nomination-choice">
                 <strong>
                   {nominationTitle ||
@@ -1561,8 +1573,8 @@ function LaunchFormView() {
                                 payCheck.input === (nomination || form.social)
                               ? payCheck.state === "X_QUOTE_UNAVAILABLE"
                                 ? t(
-                                    "A live BSC to Base quote is unavailable. Try again when the route can settle.",
-                                    "BSC 至 Base 暂无可执行报价，请稍后重试。",
+                                    "A live settlement quote is unavailable. Try again when the route can settle.",
+                                    "暂无可执行的结算报价，请稍后重试。",
                                   )
                                 : t(
                                     "Could not verify this X account. Check the handle or try again.",
@@ -1593,13 +1605,14 @@ function LaunchFormView() {
                     </p>
                   </>
                 )}
+                {sponsorNotice}
                 <div
                   id="issue-settlement-info"
                   className="issue-settlement"
                   hidden={!showSettlement}
                 >
                   <p>
-                    {t(
+                    {isPons ? shareHint : t(
                       form.chain === "base" ? "Flap sends tax to a dedicated Base address. ETH converts to USDC automatically with price protection. Peer matches a buyer who pays USD to the recipient on X Money." : "Flap sends tax to a dedicated BSC address. BNB converts to USDT automatically with price protection, then bridges to Base USDC. Other pool assets use operator conversion. Peer matches the USD payer on X Money.",
                       form.chain === "base" ? "Flap 将税收转入专属 Base 地址。ETH 通过价格检查后自动兑换 USDC，Peer 匹配买家向受益人的 X Money 支付美元。" : "Flap 将税收转入专属 BSC 地址。BNB 通过价格检查后自动兑换 USDT，再跨链为 Base USDC；其他底池资产由运营方兑换。Peer 匹配买家向 X Money 支付美元。",
                     )}
@@ -1616,8 +1629,8 @@ function LaunchFormView() {
                             `累计 ${xMinimum} ${stableSymbol} 后结算，每批最多 ${xMaximum} ${stableSymbol}。`,
                           )}{" "}
                       {t(
-                        "Dark covers settlement gas on BSC and Base.",
-                        "BSC 和 Base 的结算 Gas 由 Dark 支付。",
+                        "Dark covers settlement gas.",
+                        "结算 Gas 由 Dark 代付。",
                       )}
                     </p>
                   )}
@@ -1769,8 +1782,8 @@ function LaunchFormView() {
                 <p>
                   {form.route === "x"
                     ? t(
-                        form.chain === "base" ? "ETH taxes convert automatically to Base USDC. Other pool assets require operator conversion before settlement." : "USDT fees settle directly. BNB converts automatically to USDT. Other pool assets require operator conversion.",
-                        form.chain === "base" ? "ETH 税收自动兑换为 Base USDC；其他底池资产需先由运营方兑换，再计入付款批次。" : "USDT 税收直接结算，BNB 自动兑换为 USDT；其他底池资产需先由运营方兑换。",
+                        isPons ? "Pons creator fees bridge from ETH to Base USDC." : form.chain === "base" ? "ETH taxes convert automatically to Base USDC. Other pool assets require operator conversion before settlement." : "USDT fees settle directly. BNB converts automatically to USDT. Other pool assets require operator conversion.",
+                        isPons ? "Pons 创建者费用从 ETH 跨链为 Base USDC。" : form.chain === "base" ? "ETH 税收自动兑换为 Base USDC；其他底池资产需先由运营方兑换，再计入付款批次。" : "USDT 税收直接结算，BNB 自动兑换为 USDT；其他底池资产需先由运营方兑换。",
                       )
                     : t(
                         "Binance Pay settles from the BSC USDT pool.",
@@ -1951,6 +1964,7 @@ function LaunchFormView() {
                 )}
               </dl>
               <p className="note">{shareHint}</p>
+              {sponsorNotice}
               <label className="issue-publication-consent">
                 <input
                   type="checkbox"
@@ -1999,7 +2013,7 @@ function LaunchFormView() {
                 }}
               >
                 {step === 1
-                  ? (isPons ? t("Next · Creator fees", "下一步 · 创建者费用") : t("Next · Tax & privacy", "下一步 · 税收与隐私"))
+                  ? (isPons ? t("Next · Creator fees & giving", "下一步 · 创建者费用与公益") : t("Next · Tax & privacy", "下一步 · 税收与隐私"))
                   : step === 2
                     ? t("Next · Review", "下一步 · 核对发行")
                     : !account

@@ -1,4 +1,4 @@
-> Robinhood Chain 已接入 Pons V2，支持 ETH 底池、可选首买与钱包费用领取。[三步发行操作教程](docs/dual-chain.md#launch-on-robinhood-chain)
+> Robinhood Chain 已接入 Pons V2，支持 ETH 底池、可选首买、钱包收款及私密 X 公益。公益模式归集 ETH，经 NEAR Intents 跨链至 Base，每批以 25 USDC 发起 X Money 付款。[三步发行操作教程](docs/dual-chain.md#launch-on-robinhood-chain)
 >
 > 2026-11-22 双链更新：BSC + Base 三步发行、私密受益人、原生 BNB / ETH 自动兑换与按链公益追踪。详见 [双链操作教程](docs/dual-chain.md)。自有委托与 OTC 合约仍在 BSC。
 

@@ -1,5 +1,6 @@
 import { Contract, Interface, ZeroAddress, hexlify, randomBytes, type Log } from "ethers";
 import { abi, rpc, units, type Config } from "./chain";
+import { bindXTax } from "./tax-route";
 import type { LaunchForm, Preview } from "./launch";
 
 export async function ponsFeeSchedule(config: Config) {
@@ -30,9 +31,9 @@ export async function checkPonsFunding(config: Config, account: string, tax: num
 }
 
 export async function preparePons(
-  form: LaunchForm, config: Config, account: string, tax: number, fingerprint: string,
+  form: LaunchForm, config: Config, account: string, tax: number, fingerprint: string, payTicket?: string,
 ): Promise<Preview> {
-  if (form.route !== "wallet" || form.quote !== ZeroAddress || form.nomination) throw Error("PONS_WALLET_ROUTE");
+  if (!["x","wallet"].includes(form.route) || form.quote !== ZeroAddress) throw Error("PONS_WALLET_ROUTE");
   const terms = await checkPonsFunding(config, account, tax, form.firstBuy);
   const provider = rpc("robinhood");
   const buy = units(form.firstBuy, 18);
@@ -43,12 +44,15 @@ export async function preparePons(
   const method = buy ? "launchAndBuy" : "launchToken";
   const create = iface.getFunction(method, buy ? undefined : [null, 0n, ZeroAddress]);
   if (!create) throw Error("ABI_UNAVAILABLE");
+  const salt=hexlify(randomBytes(32));
+  if(form.route==="x" && !tax) throw Error("RESERVE_REQUIRES_TAX");
+  const recipient=form.route==="x" ? await bindXTax(form.social,payTicket,salt,null,ZeroAddress,form.nomination,form.disclosure,form.beneficiaryKey,4663,{issuer:account}) : form.creator;
   const params = {
     name: form.name.trim(), symbol: form.symbol.trim(),
     logo: form.image.replace(/^https:\/\/flap\.mypinata\.cloud\/ipfs\//, "ipfs://"),
     description: form.description, socials: { twitter: form.twitter, website: form.website, telegram: "", discord: "", farcaster: "" },
-    creatorFeeRecipient: form.creator, creatorTaxBps: tax, buybackEnabled: false,
-    expectedEconomics: terms.economics, salt: hexlify(randomBytes(32)),
+    creatorFeeRecipient: recipient, creatorTaxBps: tax, buybackEnabled: false,
+    expectedEconomics: terms.economics, salt,
   };
   const encode = (min: bigint) => iface.encodeFunctionData(create,
     buy ? [params, 0, ZeroAddress, buy, min, account, []] : [params, 0, ZeroAddress]);
@@ -76,7 +80,7 @@ export async function preparePons(
     chain: "robinhood", request: { to: target, data, value: value.toString() },
     account, fingerprint, predicted, createdAt: Date.now(), label: form.name + " / " + form.symbol,
     gas: gas.toString(), networkFee: networkFee.toString(), firstBuy: form.firstBuy,
-    quoteSymbol: "ETH", params, interfaceName, method, resultTypes: create.outputs.map(o => o.type),
+    quoteSymbol: "ETH", payTicket, params: {...params, beneficiary:recipient}, interfaceName, method, resultTypes: create.outputs.map(o => o.type),
     pons: { fee: terms.fee.toString(), minimum: minimum.toString(), curve: String(result.curve) },
   };
 }

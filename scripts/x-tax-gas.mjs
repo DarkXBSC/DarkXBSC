@@ -115,7 +115,7 @@ export function createGasSponsor({
       tx.nonce !== row.nonce ||
       tx.data !== "0x" ||
       tx.value <= 0n ||
-      tx.gasLimit !== 21000n
+      (chain === 4663 ? tx.gasLimit < 21000n || tx.gasLimit * (tx.gasPrice ?? tx.maxFeePerGas) + tx.value > limits[chain] : tx.gasLimit !== 21000n)
     )
       throw Error("X_GAS_REVIEW");
     const receipt = await p.getTransactionReceipt(hash);
@@ -175,11 +175,12 @@ export function createGasSponsor({
       transactionFees(p, chain),
     ]);
     if (nonce !== latest) throw Error("X_GAS_FUNDING");
+    if(chain===4663 && await p.getBalance(signer.address,"pending") < value) throw Error("X_GAS_SPONSOR_LOW");
     const tx = {
       chainId: BigInt(chain),
       to: address,
       value,
-      gasLimit: 21000n,
+      gasLimit: chain === 4663 ? (await p.estimateGas({from:signer.address,to:address,value})) * 120n / 100n : 21000n,
       nonce,
       ...fees,
     };

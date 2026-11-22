@@ -7,7 +7,7 @@ import { PageTitle } from "../components/Frame";
 const chapters = [
   { id: "pons", en: "Launch on Robinhood Chain", cn: "在 Robinhood Chain 发行", to: "/app/launch", steps: [
     ["Select Robinhood and add the token name, symbol and image.", "选择 Robinhood，填写代币名称、代码并上传图片。"],
-    ["Set the creator tax and recipient wallet. After Pons sweeps fees, the recipient can claim ETH from its fee escrow. X Money giving is available on BSC and Base.", "设置创建者税率和收款钱包。Pons 归集费用后，收款钱包可从费用托管合约领取 ETH。X Money 公益可在 BSC 和 Base 使用。"],
+    ["Choose a wallet or X Money giving. For giving, enter the X username and creator tax. After the Pons sweep, Dark claims ETH and bridges each batch to Base USDC for payout.", "选择钱包收款或 X Money 公益。公益模式填写 X 用户名与创建者税率。Pons 完成归集后，Dark 自动领取 ETH，逐批跨链至 Base USDC 并发起付款。"],
     ["Enter the first buy in ETH or leave it at zero. Review the Pons fee, gas and minimum tokens for any first buy. Sign with a wallet funded on Robinhood Chain (4663).", "填写 ETH 首买金额，也可以填零。核对 Pons 发行费、Gas 和首买最低到账数量，用在 Robinhood Chain（4663）上持有 ETH 的钱包签名。"],
     ["Open the confirmed receipt in Activity or view the token on Pons.", "发行确认后，可在交易记录中查看回执，或前往 Pons 查看代币。"],
   ] },
