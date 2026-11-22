@@ -62,11 +62,11 @@ export default function Welcome() {
         <dl>
           <div>
             <dt>{t("Launch network", "发行网络")}</dt>
-            <dd>BSC + Base</dd>
+            <dd>BSC · Base · Robinhood</dd>
           </div>
           <div>
             <dt>{t("Launchpad", "发行平台")}</dt>
-            <dd>Flap V3</dd>
+            <dd>Flap V3 · Pons V2</dd>
           </div>
           <div>
             <dt>{t("Verified contracts", "已验证合约")}</dt>

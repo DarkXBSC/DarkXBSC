@@ -5,6 +5,12 @@ import { Link } from "react-router-dom";
 import { useApp } from "../lib/context";
 import { PageTitle } from "../components/Frame";
 const chapters = [
+  { id: "pons", en: "Launch on Robinhood Chain", cn: "在 Robinhood Chain 发行", to: "/app/launch", steps: [
+    ["Select Robinhood and add the token name, symbol and image.", "选择 Robinhood，填写代币名称、代码并上传图片。"],
+    ["Set the creator tax and recipient wallet. After Pons sweeps fees, the recipient can claim ETH from its fee escrow. X Money giving is available on BSC and Base.", "设置创建者税率和收款钱包。Pons 归集费用后，收款钱包可从费用托管合约领取 ETH。X Money 公益可在 BSC 和 Base 使用。"],
+    ["Enter the first buy in ETH or leave it at zero. Review the Pons fee, gas and minimum tokens for any first buy. Sign with a wallet funded on Robinhood Chain (4663).", "填写 ETH 首买金额，也可以填零。核对 Pons 发行费、Gas 和首买最低到账数量，用在 Robinhood Chain（4663）上持有 ETH 的钱包签名。"],
+    ["Open the confirmed receipt in Activity or view the token on Pons.", "发行确认后，可在交易记录中查看回执，或前往 Pons 查看代币。"],
+  ] },
   { id: "dual-chain", en: "Launch on BSC or Base", cn: "BSC 与 Base 双链发行", to: "/app/launch", steps: [
     ["Choose BSC or Base, then complete the same three steps: Meme details, tax & privacy, and review & launch.", "选择 BSC 或 Base，完成相同三步：Meme 资料、税收与隐私、确认发行。"],
     ["Private beneficiaries are the default. Base ETH tax converts to Base USDC; BSC BNB converts to USDT and bridges to Base. Native conversions use price guards. Other pool assets need operator conversion.", "受益人默认保密。Base 的 ETH 税收兑换为 Base USDC；BSC 的 BNB 税收兑换 USDT 后跨链。原生币自动兑换有价格保护，其他底池资产需运营方兑换。"],
@@ -308,7 +314,7 @@ export default function Learn() {
         </nav>
         <article key={selected}>
           <h2>{t(chapter.en, chapter.cn)}</h2>
-          {!["giving", "xpay"].includes(selected) && (
+          {!["giving", "xpay", "pons", "dual-chain"].includes(selected) && (
             <FlowDiagram
               kind={
                 selected as "launch" | "otc" | "agent" | "inventory" | "reserve"
@@ -335,6 +341,7 @@ export default function Learn() {
             </Link>
           </div>
           <div className="reference-links">
+            {selected === "pons" && <a href="https://docs.ponsfamily.com/v2" target="_blank" rel="noreferrer">Pons V2</a>}
             <a
               href="https://docs.flap.sh/en/flap/v2/developers"
               target="_blank"

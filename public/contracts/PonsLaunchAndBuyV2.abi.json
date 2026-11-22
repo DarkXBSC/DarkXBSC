@@ -1,0 +1,115 @@
+[
+  {
+    "name": "launchAndBuy",
+    "type": "function",
+    "stateMutability": "payable",
+    "inputs": [
+      {
+        "type": "tuple",
+        "name": "params",
+        "components": [
+          {
+            "type": "string",
+            "name": "name"
+          },
+          {
+            "type": "string",
+            "name": "symbol"
+          },
+          {
+            "type": "string",
+            "name": "logo"
+          },
+          {
+            "type": "string",
+            "name": "description"
+          },
+          {
+            "type": "tuple",
+            "name": "socials",
+            "components": [
+              {
+                "type": "string",
+                "name": "twitter"
+              },
+              {
+                "type": "string",
+                "name": "telegram"
+              },
+              {
+                "type": "string",
+                "name": "discord"
+              },
+              {
+                "type": "string",
+                "name": "website"
+              },
+              {
+                "type": "string",
+                "name": "farcaster"
+              }
+            ]
+          },
+          {
+            "type": "address",
+            "name": "creatorFeeRecipient"
+          },
+          {
+            "type": "uint16",
+            "name": "creatorTaxBps"
+          },
+          {
+            "type": "bool",
+            "name": "buybackEnabled"
+          },
+          {
+            "type": "bytes32",
+            "name": "expectedEconomics"
+          },
+          {
+            "type": "bytes32",
+            "name": "salt"
+          }
+        ]
+      },
+      {
+        "type": "uint256",
+        "name": "launchConfigId"
+      },
+      {
+        "type": "address",
+        "name": "pairToken"
+      },
+      {
+        "type": "uint256",
+        "name": "quoteIn"
+      },
+      {
+        "type": "uint256",
+        "name": "minTokensOut"
+      },
+      {
+        "type": "address",
+        "name": "recipient"
+      },
+      {
+        "type": "address[]",
+        "name": "snipeTaxExemptions"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "address",
+        "name": "token"
+      },
+      {
+        "type": "address",
+        "name": "curve"
+      },
+      {
+        "type": "uint256",
+        "name": "tokensOut"
+      }
+    ]
+  }
+]

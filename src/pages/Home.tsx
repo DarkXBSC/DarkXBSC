@@ -87,15 +87,15 @@ export default function Home({ entry = false }: { entry?: boolean }) {
                   "原生发行、私下报价与跨市场库存。Dark 连接交易工具，资产操作由你的钱包签名。",
                 )}
               </p>
-              <span data-decode>{t("BNB SMART CHAIN / POWERED BY FLAP", "BNB 智能链 / 由 Flap 提供支持")}</span>
+              <span data-decode>{t("FLAP V3 / PONS V2", "Flap V3 / Pons V2")}</span>
             </div>
           </div>
         </section>
         <section className="facts" aria-label={t("Protocol facts", "协议数据")}>
           <div>
-            <strong>1</strong>
+            <strong>3</strong>
             <span>{t("NATIVE NETWORKS", "原生网络")}</span>
-            <p>{t("BNB Smart Chain · Flap V3", "BNB Smart Chain · Flap V3")}</p>
+            <p>BSC · Base · Robinhood Chain</p>
           </div>
           <div>
             <strong>{deployed || "—"}</strong>

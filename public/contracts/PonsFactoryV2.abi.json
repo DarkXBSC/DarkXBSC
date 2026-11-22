@@ -1,0 +1,508 @@
+[
+  {
+    "name": "launchConfigCount",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "getLaunchConfig",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "id"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "tuple",
+        "components": [
+          {
+            "type": "uint256",
+            "name": "supply"
+          },
+          {
+            "type": "uint256",
+            "name": "curveFeeBps"
+          },
+          {
+            "type": "uint256",
+            "name": "phantomQuote"
+          },
+          {
+            "type": "uint256",
+            "name": "graduationThreshold"
+          },
+          {
+            "type": "uint24",
+            "name": "poolFee"
+          },
+          {
+            "type": "int24",
+            "name": "tickSpacing"
+          },
+          {
+            "type": "bool",
+            "name": "enabled"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "launchToken",
+    "type": "function",
+    "stateMutability": "payable",
+    "inputs": [
+      {
+        "type": "tuple",
+        "name": "params",
+        "components": [
+          {
+            "type": "string",
+            "name": "name"
+          },
+          {
+            "type": "string",
+            "name": "symbol"
+          },
+          {
+            "type": "string",
+            "name": "logo"
+          },
+          {
+            "type": "string",
+            "name": "description"
+          },
+          {
+            "type": "tuple",
+            "name": "socials",
+            "components": [
+              {
+                "type": "string",
+                "name": "twitter"
+              },
+              {
+                "type": "string",
+                "name": "telegram"
+              },
+              {
+                "type": "string",
+                "name": "discord"
+              },
+              {
+                "type": "string",
+                "name": "website"
+              },
+              {
+                "type": "string",
+                "name": "farcaster"
+              }
+            ]
+          },
+          {
+            "type": "address",
+            "name": "creatorFeeRecipient"
+          },
+          {
+            "type": "uint16",
+            "name": "creatorTaxBps"
+          },
+          {
+            "type": "bool",
+            "name": "buybackEnabled"
+          },
+          {
+            "type": "bytes32",
+            "name": "expectedEconomics"
+          },
+          {
+            "type": "bytes32",
+            "name": "salt"
+          }
+        ]
+      },
+      {
+        "type": "uint256",
+        "name": "launchConfigId"
+      },
+      {
+        "type": "address",
+        "name": "pairToken"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "address",
+        "name": "token"
+      },
+      {
+        "type": "address",
+        "name": "curve"
+      }
+    ]
+  },
+  {
+    "name": "previewLaunchEconomics",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "launchConfigId"
+      },
+      {
+        "type": "address",
+        "name": "pairToken"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "bytes32"
+      }
+    ]
+  },
+  {
+    "name": "launchFee",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "launchToken",
+    "type": "function",
+    "stateMutability": "payable",
+    "inputs": [
+      {
+        "type": "tuple",
+        "name": "params",
+        "components": [
+          {
+            "type": "string",
+            "name": "name"
+          },
+          {
+            "type": "string",
+            "name": "symbol"
+          },
+          {
+            "type": "string",
+            "name": "logo"
+          },
+          {
+            "type": "string",
+            "name": "description"
+          },
+          {
+            "type": "tuple",
+            "name": "socials",
+            "components": [
+              {
+                "type": "string",
+                "name": "twitter"
+              },
+              {
+                "type": "string",
+                "name": "telegram"
+              },
+              {
+                "type": "string",
+                "name": "discord"
+              },
+              {
+                "type": "string",
+                "name": "website"
+              },
+              {
+                "type": "string",
+                "name": "farcaster"
+              }
+            ]
+          },
+          {
+            "type": "address",
+            "name": "creatorFeeRecipient"
+          },
+          {
+            "type": "uint16",
+            "name": "creatorTaxBps"
+          },
+          {
+            "type": "bool",
+            "name": "buybackEnabled"
+          },
+          {
+            "type": "bytes32",
+            "name": "expectedEconomics"
+          },
+          {
+            "type": "bytes32",
+            "name": "salt"
+          }
+        ]
+      },
+      {
+        "type": "uint256",
+        "name": "launchConfigId"
+      },
+      {
+        "type": "address",
+        "name": "pairToken"
+      },
+      {
+        "type": "address[]",
+        "name": "snipeTaxExemptions"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "address",
+        "name": "token"
+      },
+      {
+        "type": "address",
+        "name": "curve"
+      }
+    ]
+  },
+  {
+    "name": "approvedPairTokens",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "pairToken"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "bool"
+      }
+    ]
+  },
+  {
+    "name": "pairTokenEconomics",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "pairToken"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "phantomQuote"
+      },
+      {
+        "type": "uint256",
+        "name": "graduationThreshold"
+      },
+      {
+        "type": "uint8",
+        "name": "decimals"
+      }
+    ]
+  },
+  {
+    "name": "getLaunchedToken",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "token"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "tuple",
+        "components": [
+          {
+            "type": "address",
+            "name": "token"
+          },
+          {
+            "type": "address",
+            "name": "curve"
+          },
+          {
+            "type": "address",
+            "name": "deployer"
+          },
+          {
+            "type": "address",
+            "name": "creatorFeeRecipient"
+          },
+          {
+            "type": "address",
+            "name": "pairToken"
+          },
+          {
+            "type": "uint256",
+            "name": "graduationThreshold"
+          },
+          {
+            "type": "uint24",
+            "name": "poolFee"
+          },
+          {
+            "type": "int24",
+            "name": "tickSpacing"
+          },
+          {
+            "type": "uint16",
+            "name": "creatorTaxBps"
+          },
+          {
+            "type": "bool",
+            "name": "buybackEnabled"
+          },
+          {
+            "type": "uint8",
+            "name": "phase"
+          },
+          {
+            "type": "uint256",
+            "name": "sweptQuote"
+          },
+          {
+            "type": "uint256",
+            "name": "sweptTokens"
+          },
+          {
+            "type": "uint256",
+            "name": "sweptAt"
+          },
+          {
+            "type": "bool",
+            "name": "exists"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "getLaunchFeePolicy",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "token"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "tuple",
+        "components": [
+          {
+            "type": "address",
+            "name": "protocolFeeRecipient"
+          },
+          {
+            "type": "uint16",
+            "name": "protocolFeeShareBps"
+          },
+          {
+            "type": "uint16",
+            "name": "buybackBurnBps"
+          },
+          {
+            "type": "uint16",
+            "name": "hookFeeBps"
+          },
+          {
+            "type": "uint16",
+            "name": "maxInternalPriceImpactBps"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "TokenLaunched",
+    "type": "event",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "token",
+        "indexed": true
+      },
+      {
+        "type": "address",
+        "name": "curve",
+        "indexed": true
+      },
+      {
+        "type": "address",
+        "name": "deployer",
+        "indexed": true
+      },
+      {
+        "type": "address",
+        "name": "pairToken"
+      },
+      {
+        "type": "uint256",
+        "name": "launchConfigId"
+      },
+      {
+        "type": "uint256",
+        "name": "graduationThreshold"
+      }
+    ]
+  },
+  {
+    "name": "canLaunch",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "account"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "bool"
+      }
+    ]
+  },
+  {
+    "name": "launchEnabled",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "bool"
+      }
+    ]
+  },
+  {
+    "name": "maxCreatorTaxBps",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "uint256"
+      }
+    ]
+  }
+]

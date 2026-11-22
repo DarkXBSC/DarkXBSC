@@ -134,9 +134,8 @@ export default function Activity() {
               }}
             >
               <option value="bsc">BSC</option>
-              {activities.some((a) => a.chain === "robinhood") && (
-                <option value="robinhood">Robinhood · archive</option>
-              )}
+              <option value="base">Base</option>
+              <option value="robinhood">Robinhood Chain</option>
             </select>
           </label>
           <label>

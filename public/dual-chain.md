@@ -38,6 +38,12 @@ Set `X_TAX_AUTO_NATIVE=yes` on the controller and signer to enable the native co
 
 The Giving tracker accepts `?view=track&chain=base&token=...` or `chain=bsc`. Market, watchlist and chart data use chain-scoped cache keys. The Contracts page identifies third-party Flap contracts separately from Dark's BSC deployments. The official Dark token remains BSC `0x74b6E9dd0DFA02e4a98D1ced7CaaFaad68627777`.
 
+## Launch on Robinhood Chain
+
+Select Robinhood in the same three-step form to launch through [Pons V2](https://ponsfamily.com/launchpad) on chain 4663. Upload the token image, enter a creator tax and an EVM wallet to receive fees, and choose an optional initial buy in native ETH. Dark reads the current launch fee, eligibility and tax limit before publishing. Review the required ETH and estimated gas, then confirm in your wallet. A positive first buy uses the Pons router with a minimum token output of 99% of the simulated quote. A zero first buy goes directly to the factory. After confirmation, the receipt links to the explorer and the token can be opened on Pons.
+
+After a Pons fee sweep, the fee recipient claims creator fees in ETH through Pons. The X Money tax settlement service supports BSC and Base. The Contracts page lists the Pons factory and router alongside the two Flap networks.
+
 ## Sources
 
 - [Flap deployments](https://docs.flap.sh/en/flap/v2/developers/deployed-contract-addresses)

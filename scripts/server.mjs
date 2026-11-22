@@ -60,6 +60,7 @@ const env = Object.fromEntries(
       ].includes(k),
   ),
 );
+env.ROBINHOOD_RPC_URL ||= "https://rpc.mainnet.chain.robinhood.com";
 env.BASE_RPC_URL ||= "https://mainnet.base.org";
 const protocol = JSON.parse(fs.readFileSync("public/protocols.json"));
 const gmgn = createGmgnMarket(env.GMGN_API_KEY);
@@ -840,6 +841,7 @@ const server = http.createServer(async (req, res) => {
         endpoints.add(
           env.X_TAX_BSC_RPC_URL || "https://bsc-rpc.publicnode.com",
         );
+      if (chain === "robinhood") endpoints.add("https://rpc.mainnet.chain.robinhood.com");
       if (chain === "base") endpoints.add("https://base-rpc.publicnode.com");
       for (const endpoint of endpoints) {
         try {
@@ -851,7 +853,7 @@ const server = http.createServer(async (req, res) => {
           });
           if (r.ok) return json(res, 200, await r.json());
         } catch {
-          /* Try the second read-only BSC endpoint on transport failure. */
+          /* Try the next read-only endpoint on transport failure. */
         }
       }
       return json(res, 502, { error: "RPC_UNAVAILABLE" });

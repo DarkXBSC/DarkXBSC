@@ -15,6 +15,7 @@ import {
   isAddress,
 } from "ethers";
 import { abi, chainInfo, flapFor, LaunchChain, Config, Contract, rpc, ZeroAddress, units, erc20 } from "./chain";
+import { preparePons } from "./pons";
 export type LaunchForm = {
   chain: LaunchChain;
   name: string;
@@ -56,6 +57,7 @@ export type Preview = {
   interfaceName: string;
   method: string;
   resultTypes: string[];
+  pons?: { fee: string; minimum: string; curve: string };
 };
 export function fingerprint(form: LaunchForm) {
   return keccak256(toUtf8Bytes(JSON.stringify(form)));
@@ -82,7 +84,7 @@ export async function prepare(
     throw Error("INVALID_TOKEN_NAME");
   if (!form.cid || !form.image) throw Error("UPLOAD_IMAGE_FIRST");
   const buyTax = bps(form.buyTax),
-    sellTax = bps(form.sellTax);
+    sellTax = form.chain === "robinhood" ? buyTax : bps(form.sellTax);
   if (
     !["x", "binance", "square", "wallet", "reserve", "commission"].includes(
       form.route,
@@ -94,6 +96,7 @@ export async function prepare(
     (!isAddress(form.creator) || form.creator === ZeroAddress)
   )
     throw Error("INVALID_ADDRESS");
+  if (form.chain === "robinhood") return preparePons(form, config, account, buyTax, fingerprint(form));
   if (!["bsc", "base"].includes(form.chain)) throw Error("UNSUPPORTED_LAUNCH_CHAIN");
   if (form.chain === "base" && !["x", "wallet"].includes(form.route)) throw Error("ROUTE_BSC_ONLY");
   const protocol = flapFor(config, form.chain);

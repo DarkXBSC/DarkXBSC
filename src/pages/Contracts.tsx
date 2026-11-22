@@ -55,9 +55,18 @@ export default function Contracts() {
       />
       <OfficialTokenNotice />
       <section className="issue-card">
-        <h2>{t("BSC + Base launch contracts", "BSC + Base 发行合约")}</h2>
-        <p>{t("Launches use Flap’s existing contracts. Dark’s custom registry, commission vaults and OTC contracts are currently on BSC. The official Dark token remains on BSC.", "发行调用 Flap 已部署的合约。Dark 自有登记簿、公益委托金库与 OTC 合约目前在 BSC；官方 Dark 代币也仍在 BSC。")}</p>
-        <div className="contracts-list">{config && (["bsc", "base"] as const).map(chain => <article key={chain}><h3>{chain === "base" ? "Base · 8453" : "BSC · 56"}</h3>{(["portal", "vaultPortal", "taxImplementation"] as const).map(key => <div key={key}><p>Flap · {key}</p><CopyText value={config.protocols.flapChains[chain][key]} /><a href={config.chains[chain].explorer + "/address/" + config.protocols.flapChains[chain][key] + "#code"} target="_blank" rel="noreferrer">{t("Contract source", "查看合约源码")}</a></div>)}</article>)}</div>
+        <h2>{t("Launch contracts", "发行合约")}</h2>
+        <p>{t("BSC and Base launches use Flap V3. Robinhood Chain launches use Pons V2. Dark’s custom registry, commission vaults and OTC contracts are currently on BSC. The official Dark token remains on BSC.", "BSC 和 Base 通过 Flap V3 发行，Robinhood Chain 通过 Pons V2 发行。Dark 自有登记簿、公益委托金库与 OTC 合约目前在 BSC；官方 Dark 代币也仍在 BSC。")}</p>
+        <div className="contracts-list">{config && (["bsc", "base"] as const).map(chain => <article key={chain}><h3>{chain === "base" ? "Base · 8453" : "BSC · 56"}</h3>{(["portal", "vaultPortal", "taxImplementation"] as const).map(key => <div key={key}><p>Flap · {key}</p><CopyText value={config.protocols.flapChains[chain][key]} /><a href={config.chains[chain].explorer + "/address/" + config.protocols.flapChains[chain][key] + "#code"} target="_blank" rel="noreferrer">{t("Contract source", "查看合约源码")}</a></div>)}</article>)}
+          {config && <article>
+            <h3>Robinhood Chain · 4663</h3>
+            {(["factory", "launchAndBuy"] as const).map(key => <div key={key}>
+              <p>Pons V2 · {key === "factory" ? t("Launch factory", "发行工厂") : t("Launch and first buy", "发行与首买路由")}</p>
+              <CopyText value={config.protocols.pons[key]} />
+              <a href={config.chains.robinhood.explorer + "/address/" + config.protocols.pons[key]} target="_blank" rel="noreferrer">{t("Explorer", "区块浏览器")}</a>
+            </div>)}
+          </article>}
+        </div>
       </section>
       <div className="directory-toolbar">
         <h2>{t("BSC protocol contracts", "BSC 协议合约")}</h2>

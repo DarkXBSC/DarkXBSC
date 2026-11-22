@@ -10,9 +10,10 @@ import {
   ZeroAddress,
 } from "ethers";
 export type Chain = "bsc" | "base" | "robinhood";
-export type LaunchChain = "bsc" | "base";
+export type LaunchChain = Chain;
+export type FlapChain = Exclude<LaunchChain, "robinhood">;
 export type FlapProtocol = { portal: string; vaultPortal: string; taxImplementation: string; standardImplementation?: string; agentRegistry?: string };
-export function flapFor(config: Config, chain: LaunchChain) { return config.protocols.flapChains[chain]; }
+export function flapFor(config: Config, chain: FlapChain) { return config.protocols.flapChains[chain]; }
 export type Deployment = {
   name: string;
   address: string;
@@ -44,7 +45,7 @@ export type Config = {
     }
   >;
   protocols: {
-    flapChains: Record<LaunchChain, FlapProtocol>;
+    flapChains: Record<FlapChain, FlapProtocol>;
     flap: {
       portal: string;
       vaultPortal: string;

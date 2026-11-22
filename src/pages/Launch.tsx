@@ -1,3 +1,4 @@
+import { checkPonsFunding, confirmPonsCreation, ponsFeeSchedule } from "../lib/pons";
 import { composeLaunchImage } from "../lib/launch-image";
 import BinanceRecipientCheck from "../components/BinanceRecipientCheck";
 import {
@@ -160,7 +161,7 @@ function LaunchFormView() {
         const draft = JSON.parse(
           localStorage.getItem("tiger-genesis:draft") || "{}",
         );
-        if (draft.chain && !["bsc", "base"].includes(draft.chain))
+        if (draft.chain && !["bsc", "base", "robinhood"].includes(draft.chain))
           return {
             ...initial,
             name: draft.name || "",
@@ -187,12 +188,15 @@ function LaunchFormView() {
         const defaultQuote = route === "binance" ? BSC_USDT : ZeroAddress;
         const quote =
           preset === "binance" ? BSC_USDT : (savedQuote ?? defaultQuote);
+        const pons = draft.chain === "robinhood" && !preset;
+        const chain = pons ? "robinhood" : draft.chain === "base" ? "base" : "bsc";
         return {
           ...initial,
           ...draft,
-          chain: draft.chain === "base" ? "base" : "bsc",
-          route: draft.chain === "base" && !["x", "wallet"].includes(route) ? "x" : route,
-          quote,
+          chain,
+          route: pons ? "wallet" : chain === "base" && !["x", "wallet"].includes(route) ? "x" : route,
+          quote: pons ? ZeroAddress : quote,
+          ...(preset && preset !== draft.route ? { cid: "", image: "" } : {}),
           social: "",
           beneficiaryKey: initial.beneficiaryKey,
           disclosure: {
@@ -208,7 +212,7 @@ function LaunchFormView() {
           },
           nomination,
           firstBuy:
-            savedQuote?.toLowerCase() === quote.toLowerCase()
+            savedQuote?.toLowerCase() === (pons ? ZeroAddress : quote).toLowerCase() && chain === draft.chain
               ? (draft.firstBuy ?? "0")
               : "0",
         };
@@ -234,7 +238,18 @@ function LaunchFormView() {
     } | null>(null),
     [pending, setPending] = useState(false);
   const network = chainInfo[form.chain];
-  const chainLabel = form.chain === "base" ? "Base" : "BSC";
+  const isPons = form.chain === "robinhood";
+  const [ponsFees, setPonsFees] = useState<Awaited<ReturnType<typeof ponsFeeSchedule>> | null>(null);
+  useEffect(() => {
+    let current = true;
+    setPonsFees(null);
+    if (isPons && config) {
+      ponsFeeSchedule(config).then(fees => { if (current) setPonsFees(fees); }).catch(() => {});
+    }
+    return () => { current = false; };
+  }, [isPons, config]);
+  const chainLabel = isPons ? "Robinhood" : form.chain === "base" ? "Base" : "BSC";
+  const protocolLabel = isPons ? "Pons V2" : "Flap V3";
   const stableAddress = form.chain === "base" ? BASE_USDC : BSC_USDT;
   const stableSymbol = form.chain === "base" ? "USDC" : "USDT";
   const stablePool = form.route === "x" || form.route === "binance";
@@ -339,6 +354,11 @@ function LaunchFormView() {
   }, [localImage]);
   useEffect(() => {
     const abort = new AbortController();
+    if (form.chain === "robinhood") {
+      setQuotes([{address: ZeroAddress, symbol: "ETH", name: "Ether", decimals: 18, logoUrl: "", category: "crypto"}]);
+      setQuoteStatus("ready");
+      return;
+    }
     setQuoteStatus("loading");
     setQuotes([]);
     fetch("/api/flap/quotes", { signal: abort.signal })
@@ -360,11 +380,16 @@ function LaunchFormView() {
     return () => abort.abort();
   }, [quoteRetry, form.chain]);
   function changeChain(chain: LaunchChain) {
-    if (chain === form.chain || working || pending || busy) return;
+    if (chain === form.chain || (nomination && chain === "robinhood") || working || pending || busy) return;
     generation.current++;
     setPayCheck(null); setXConsent(false); setPublishConsent(false);
     setPreview(null); setStep(1); setFilter("all"); setQ(""); setQuotes([]);
-    setForm(f => ({...f, chain, quote: ZeroAddress, firstBuy: "0", route: chain === "base" && !["x", "wallet"].includes(f.route) ? "x" : f.route}));
+    setForm(f => {
+      const route = chain === "robinhood" ? "wallet"
+        : chain === "base" && !["x", "wallet"].includes(f.route) ? "x" : f.route;
+      return { ...f, chain, quote: ZeroAddress, firstBuy: "0", route,
+        ...(route !== f.route ? { cid: "", image: "", social: "" } : {}) };
+    });
   }
   function changeRoute(route: TaxRoute) {
     if (nomination || route === form.route) return;
@@ -503,12 +528,12 @@ function LaunchFormView() {
     try {
       if (!identityReady || !selectedQuote) throw Error("INVALID_TOKEN_NAME");
       const buyTax = bps(form.buyTax),
-        sellTax = bps(form.sellTax);
-      if (!buyTax && !sellTax) throw Error("ZERO_TAX_UNAVAILABLE");
+        sellTax = isPons ? buyTax : bps(form.sellTax);
+      if (!isPons && !buyTax && !sellTax) throw Error("ZERO_TAX_UNAVAILABLE");
       if (
-        !/^\d+$/.test(form.taxDays) ||
+        !isPons && (!/^\d+$/.test(form.taxDays) ||
         Number(form.taxDays) < 1 ||
-        Number(form.taxDays) > 3650
+        Number(form.taxDays) > 3650)
       )
         throw Error("INVALID_TAX_DURATION");
       units(form.firstBuy, selectedQuote.decimals);
@@ -517,8 +542,9 @@ function LaunchFormView() {
         (!isAddress(form.creator) || form.creator === ZeroAddress)
       )
         throw Error("INVALID_ADDRESS");
+      if (isPons) await checkPonsFunding(config, account, buyTax, form.firstBuy);
       const uploaded = await upload();
-      if (uploaded.quote !== ZeroAddress && Number(uploaded.firstBuy) > 0) {
+      if (uploaded.chain !== "robinhood" && uploaded.quote !== ZeroAddress && Number(uploaded.firstBuy) > 0) {
         setWorking("APPROVING");
         const c = new Contract(uploaded.quote, erc20, rpc(uploaded.chain));
         const amount = units(uploaded.firstBuy, Number(await c.decimals()));
@@ -569,6 +595,7 @@ function LaunchFormView() {
     }
     operation.current = true;
     setPending(true);
+    let confirmed = false;
     try {
       if (form.route === "x" || form.route === "binance") {
         const checked = await checkRecipient(
@@ -605,6 +632,8 @@ function LaunchFormView() {
         { ...preview.request, value: BigInt(preview.request.value) },
         "Launch " + preview.label,
       );
+      confirmed = true;
+      if (preview.pons) await confirmPonsCreation(config, preview, receipt.logs);
       const code = await rpc(preview.chain).getCode(preview.predicted);
       if (code === "0x") throw Error("LAUNCH_ADDRESS_NOT_CONFIRMED");
       const token = new Contract(preview.predicted, erc20, rpc(preview.chain));
@@ -626,7 +655,7 @@ function LaunchFormView() {
       );
     } catch (e: any) {
       setMessage(errorCode(e));
-      if (!e?.submitted) setPending(false);
+      if (!confirmed && !e?.submitted) setPending(false);
     } finally {
       operation.current = false;
     }
@@ -744,7 +773,8 @@ function LaunchFormView() {
         ? form.creator || t("Connected wallet", "连接的钱包")
         : channels.find((c) => c.id === form.route)?.full;
   const shareHint =
-    form.route === "commission"
+    isPons ? t("Pons credits fees to this recipient after a sweep. The recipient can claim ETH from the Pons fee escrow.", "Pons 归集费用后，指定的接收地址可从 Pons 费用托管合约领取 ETH。")
+    : form.route === "commission"
       ? t(
           "A share of net tax received funds commissions. The selected author is paid in the pool asset.",
           "实际到账税收按比例进入公益预算。选稿时，作者直接收到该底池资产。",
@@ -792,9 +822,16 @@ function LaunchFormView() {
           className="issue-networks"
           aria-label={t("Launch network and protocol", "发行网络与协议")}
         >
-          {(["bsc", "base"] as const).map(chain => <button type="button" key={chain} aria-pressed={form.chain === chain} disabled={!!working || busy || pending || !!completed} onClick={() => changeChain(chain)}>{chain === "bsc" ? <BnbMark /> : <span className="base-mark" />} {chain === "bsc" ? "BSC" : "Base"}</button>)}
+          {(["bsc", "base", "robinhood"] as const).map(chain => (
+            <button type="button" key={chain} aria-pressed={form.chain === chain}
+              disabled={!!working || busy || pending || !!completed || (!!nomination && chain === "robinhood")}
+              onClick={() => changeChain(chain)}>
+              {chain === "bsc" && <BnbMark />}{chain === "base" && <span className="base-mark" />}
+              {chain === "bsc" ? "BSC" : chain === "base" ? "Base" : "Robinhood"}
+            </button>
+          ))}
           <span>
-            <Layers size={15} /> Flap V3
+            <Layers size={15} /> {protocolLabel}
           </span>
         </div>
       </header>
@@ -802,7 +839,7 @@ function LaunchFormView() {
         <nav className="issue-steps" aria-label={t("Launch steps", "发行步骤")}>
           {[
             [1, t("Your Meme", "Meme 资料")],
-            [2, t("Tax & privacy", "税收与隐私")],
+            [2, isPons ? t("Creator fees", "创建者费用") : t("Tax & privacy", "税收与隐私")],
             [3, t("Review & launch", "确认发行")],
           ].map(([n, label]) => (
             <button
@@ -840,13 +877,15 @@ function LaunchFormView() {
           >
             {t("Register in Dark", "登记到 Dark")}
           </button>}
-          <p>
+          {completed.chain !== "robinhood" && <p>
             {t(
               completed.chain === "base" ? "Created through Flap on Base. Market indexing can take time; your creation receipt is the primary confirmation." : "Registration is a separate on-chain transaction. It does not imply official endorsement.",
               completed.chain === "base" ? "已通过 Base 上的 Flap 创建。行情收录可能有延迟，请以创建回执为准。" : "登记是独立的链上交易，不代表 Dark 官方背书。",
             )}
-          </p>
-          <Link className="button" to={"/app/explore?chain=" + completed.chain + "&token=" + completed.token}>{t("Open market & chart", "打开行情与 K 线")}</Link>
+          </p>}
+          {completed.chain === "robinhood"
+            ? <a className="button" href={"https://ponsfamily.com/launchpad/" + completed.token.toLowerCase()} target="_blank" rel="noreferrer">{t("View on Pons", "在 Pons 查看")}</a>
+            : <Link className="button" to={"/app/explore?chain=" + completed.chain + "&token=" + completed.token}>{t("Open market & chart", "打开行情与 K 线")}</Link>}
           {form.route === "commission" && (
             <Link
               className="button primary"
@@ -900,7 +939,7 @@ function LaunchFormView() {
             </div>
             <div>
               <dt>{t("Network", "网络")}</dt>
-              <dd>{chainLabel + " / Flap V3"}</dd>
+              <dd>{chainLabel + " / " + protocolLabel}</dd>
             </div>
             <div>
               <dt>{t("Tax beneficiary", "税收受益人")}</dt>
@@ -995,16 +1034,16 @@ function LaunchFormView() {
               </div>
             )}
             <div>
-              <dt>{t("Buy / sell tax", "买入 / 卖出税")}</dt>
+              <dt>{isPons ? t("Creator tax", "创建者税率") : t("Buy / sell tax", "买入 / 卖出税")}</dt>
               <dd>
-                {form.buyTax}% / {form.sellTax}%
+                {isPons ? form.buyTax + "%" : form.buyTax + "% / " + form.sellTax + "%"}
               </dd>
             </div>
             <div>
               <dt>{t("Paired asset", "底池资产")}</dt>
               <dd>
                 {preview.quoteSymbol}{" "}
-                {preview.params.quoteToken !== ZeroAddress && (
+                {!isPons && preview.params.quoteToken !== ZeroAddress && (
                   <CopyText value={preview.params.quoteToken} />
                 )}
               </dd>
@@ -1015,6 +1054,10 @@ function LaunchFormView() {
                 {preview.firstBuy} {preview.quoteSymbol}
               </dd>
             </div>
+            {preview.pons && <>
+              <div><dt>{t("Pons launch fee", "Pons 发行费")}</dt><dd>{formatEther(preview.pons.fee)} ETH</dd></div>
+              {BigInt(preview.pons.minimum) > 0n && <div><dt>{t("Minimum tokens from first buy", "首买最低到账")}</dt><dd>{formatEther(preview.pons.minimum)} {form.symbol}</dd></div>}
+            </>}
             <div>
               <dt>{t("Native value", "发送原生币")}</dt>
               <dd>
@@ -1216,7 +1259,7 @@ function LaunchFormView() {
             <h2 id="issue-share-title">{t("share fees", "分配交易税")}</h2>
             <div className="issue-channels">
               {channels
-                .filter((c) => (form.chain === "base" ? ["x", "wallet"] : ["x", "commission", "wallet"]).includes(c.id))
+                .filter((c) => (isPons ? ["wallet"] : form.chain === "base" ? ["x", "wallet"] : ["x", "commission", "wallet"]).includes(c.id))
                 .map(({ id, label, full, icon }) => (
                   <button
                     type="button"
@@ -1294,7 +1337,7 @@ function LaunchFormView() {
                 </small>
               </label>
             )}
-            {nomination ? (
+            {!isPons && (nomination ? (
               <div className="nomination-choice">
                 <strong>
                   {nominationTitle ||
@@ -1319,7 +1362,7 @@ function LaunchFormView() {
               >
                 {t("Choose a community nomination", "从社区提名中选择")}
               </Link>
-            )}
+            ))}
             {needsRecipient && !nomination && (
               <div className="issue-handle">
                 <input
@@ -1635,7 +1678,7 @@ function LaunchFormView() {
           <section hidden={step !== 2} className="issue-card issue-pools">
             <h2>
               {t("Paired asset", "底池资产")}
-              {quoteStatus === "ready" && (
+              {!isPons && quoteStatus === "ready" && (
                 <span>
                   {t(
                     `${quotes.length} Flap assets`,
@@ -1644,7 +1687,7 @@ function LaunchFormView() {
                 </span>
               )}
             </h2>
-            <div className="pool-tools">
+            {!isPons && <div className="pool-tools">
               <div className="segmented">
                 {[
                   ["all", "All", "全部"],
@@ -1667,7 +1710,7 @@ function LaunchFormView() {
                 aria-label={t("Search pool assets", "搜索底池资产")}
                 placeholder={t("Search pool assets", "搜索底池资产")}
               />
-            </div>
+            </div>}
             <div className="pool-directory">
               {availableQuotes.map((x) => (
                 <button
@@ -1682,11 +1725,11 @@ function LaunchFormView() {
                   }
                   onClick={() => selectPool(x.address)}
                 >
-                  <img
+                  {!isPons && <img
                     loading="lazy"
                     src={"/api/quote-logo/" + network.id + "/" + x.address}
                     alt=""
-                  />
+                  />}
                   <span>
                     <strong>{x.symbol}</strong>
                     <small>{x.name}</small>
@@ -1791,23 +1834,26 @@ function LaunchFormView() {
           </section>
           <section hidden={step !== 2} className="issue-card issue-terms">
             <h2>{t("Trading tax & first buy", "交易税与首买")}</h2>
+            {isPons && ponsFees && <p className="note">
+              {t("Pons launch fee", "Pons 发行费")} {formatEther(ponsFees.fee)} ETH · {t("Maximum creator tax", "创建者税率上限")} {Number(ponsFees.maximum) / 100}%
+            </p>}
             <div className="field-row">
               <label>
-                {t("Buy tax (%)", "买入税（%）")}
+                {isPons ? t("Creator tax (%)", "创建者税率（%）") : t("Buy tax (%)", "买入税（%）")}
                 <input
                   inputMode="decimal"
                   value={form.buyTax}
                   onChange={(e) => update("buyTax", e.target.value)}
                 />
               </label>
-              <label>
+              {!isPons && <label>
                 {t("Sell tax (%)", "卖出税（%）")}
                 <input
                   inputMode="decimal"
                   value={form.sellTax}
                   onChange={(e) => update("sellTax", e.target.value)}
                 />
-              </label>
+              </label>}
             </div>
             {["bsc", "base"].includes(form.chain) && (
               <>
@@ -1868,17 +1914,17 @@ function LaunchFormView() {
                   <dd>{quoteLabel}</dd>
                 </div>
                 <div>
-                  <dt>{t("Buy / sell tax", "买入 / 卖出税")}</dt>
+                  <dt>{isPons ? t("Creator tax", "创建者税率") : t("Buy / sell tax", "买入 / 卖出税")}</dt>
                   <dd>
-                    {form.buyTax}% / {form.sellTax}%
+                    {isPons ? form.buyTax + "%" : form.buyTax + "% / " + form.sellTax + "%"}
                   </dd>
                 </div>
-                <div>
+                {!isPons && <div>
                   <dt>{t("Tax duration", "税期")}</dt>
                   <dd>
                     {form.taxDays} {t("days", "天")}
                   </dd>
-                </div>
+                </div>}
                 <div>
                   <dt>{t("Initial buy", "首买")}</dt>
                   <dd>
@@ -1953,7 +1999,7 @@ function LaunchFormView() {
                 }}
               >
                 {step === 1
-                  ? t("Next · Tax & privacy", "下一步 · 税收与隐私")
+                  ? (isPons ? t("Next · Creator fees", "下一步 · 创建者费用") : t("Next · Tax & privacy", "下一步 · 税收与隐私"))
                   : step === 2
                     ? t("Next · Review", "下一步 · 核对发行")
                     : !account
@@ -1981,7 +2027,7 @@ function LaunchFormView() {
               <a
                 target="_blank"
                 rel="noreferrer"
-                href="https://docs.flap.sh/en/flap/v2/developers/bonding-curve/basic-and-mechanism/bonding-curve-tax-token-v3"
+                href={isPons ? "https://docs.ponsfamily.com/v2" : "https://docs.flap.sh/en/flap/v2/developers/bonding-curve/basic-and-mechanism/bonding-curve-tax-token-v3"}
               >
                 {t("Protocol documentation", "协议文档")}
               </a>

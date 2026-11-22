@@ -169,7 +169,7 @@ export default function Workspace({ children }: { children: ReactNode }) {
         {children}
       </main>
       <footer className="bags-footer">
-        <span className="foot-name">Dark · BSC + Base</span>
+        <span className="foot-name">Dark · BSC · Base · Robinhood</span>
         <div className="foot-links">
           <Link to="/about">{t("About", "关于")}</Link>
           <Link to="/app/contracts">{t("Contracts", "合约与源码")}</Link>
