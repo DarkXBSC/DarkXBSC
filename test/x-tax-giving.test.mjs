@@ -24,6 +24,7 @@ const u = (s, d = 18) => parseUnits(s, d);
 const erc = new Interface([
   "event Transfer(address indexed from,address indexed to,uint256 value)",
   "function approve(address spender,uint256 amount)",
+  "function balanceOf(address) view returns(uint256)",
 ]);
 function transfer(asset, from, to, amount) {
   return {
@@ -55,6 +56,7 @@ test("only proved USD for the selected X payout counts, including partial fills"
   assert.deepEqual(verifiedFiat(o, h), { cents: 151n, released: 1510000n });
   assert.throws(() => verifiedFiat(o, id("another payee")));
 });
+for (const chainId of [56, 8453])
 for (const { viaNomination, visibility } of [
   { viaNomination: false }, { viaNomination: true },
   { viaNomination: false, visibility: "private" },
@@ -62,7 +64,7 @@ for (const { viaNomination, visibility } of [
   { viaNomination: true, visibility: "private" },
 ])
   test(
-    (visibility ? visibility + " disclosure: " : "") +
+    chainId + " " + (visibility ? visibility + " disclosure: " : "") +
     (viaNomination ? "Agent ID nomination: " : "") +
       "Flap tax → cross-chain receipts → exact Base order → verified USD; restart and duplicate ticks do not pay twice",
     async (t) => {
@@ -75,8 +77,10 @@ for (const { viaNomination, visibility } of [
         X_TAX_MIN_USDT: "25",
         X_TAX_MAX_USDT: "30",
       };
+      const stable = chainId === 56 ? BSC_USDT : USDC;
+      const amount = v => u(v, chainId === 56 ? 18 : 6);
       const salt = id("launch salt"),
-        token = predictTaxToken(salt),
+        token = predictTaxToken(salt, chainId),
         processor = Wallet.createRandom().address,
         other = Wallet.createRandom().address,
         escrow = Wallet.createRandom().address,
@@ -84,7 +88,7 @@ for (const { viaNomination, visibility } of [
       const impl = JSON.parse(
         readFileSync(new URL("../public/protocols.json", import.meta.url)),
       )
-        .flap.taxImplementation.slice(2)
+        .flapChains[chainId === 56 ? "bsc" : "base"].taxImplementation.slice(2)
         .toLowerCase();
       let height = 91,
         recipient,
@@ -98,7 +102,7 @@ for (const { viaNomination, visibility } of [
       const receiptMap = new Map();
       const bridgeIn = id("bsc"),
         bridgeOut = id("base"),
-        actual = u("29.93", 6);
+        actual = u(chainId === 56 ? "29.93" : "30", 6);
       const source = {
         getNetwork: async () => ({ chainId: 56n }),
         getBlock: async () => ({ number: height }),
@@ -121,9 +125,11 @@ for (const { viaNomination, visibility } of [
       };
       const base = {
         getNetwork: async () => ({ chainId: 8453n }),
-        getBlock: async () => ({ number: 100 }),
+        getBlock: async () => ({ number: chainId === 56 ? 100 : height }),
+        getLogs: source.getLogs,
+        call: async () => erc.encodeFunctionResult("balanceOf", [u("33", 6)]),
         getBalance: async () => u("0.01"),
-        getCode: async () => "0x12",
+        getCode: chainId === 56 ? async () => "0x12" : source.getCode,
         getFeeData: async () => ({
           gasPrice: 100n,
           maxFeePerGas: 200n,
@@ -147,7 +153,7 @@ for (const { viaNomination, visibility } of [
           submissions++;
           receiptMap.set(keccak256(raw), {
             status: 1,
-            blockNumber: 98,
+            blockNumber: chainId === 56 ? 98 : height,
             logs: [],
           });
         },
@@ -228,12 +234,13 @@ for (const { viaNomination, visibility } of [
         rmSync(dir, { force: true, recursive: true });
       });
       quotesOK = false;
-      await assert.rejects(svc.check("@Friend"), /X_QUOTE_UNAVAILABLE/);
+      if (chainId === 56) await assert.rejects(svc.check("@Friend"), /X_QUOTE_UNAVAILABLE/);
       quotesOK = true;
       const beneficiaryKey = randomBytes(32).toString("hex");
       const disclosure = visibility ? { visibility, purpose: "Animal rescue artwork" } : undefined;
-      const direct = await svc.check("@Friend", undefined, disclosure, beneficiaryKey);
+      const direct = await svc.check("@Friend", undefined, disclosure, beneficiaryKey, chainId);
       let input = {
+        chainId, quote: stable,
         recipient: "@Friend",
         disclosure,
         beneficiaryKey,
@@ -292,13 +299,13 @@ for (const { viaNomination, visibility } of [
           false,
         );
         nomination = row.id;
-        const check = await svc.check(undefined, nomination, disclosure, beneficiaryKey);
+        const check = await svc.check(undefined, nomination, disclosure, beneficiaryKey, chainId);
         assert.notEqual(direct.ticket, check.ticket);
         await assert.rejects(
           svc.bind({ ...input, nomination }),
           /RECIPIENT_CHANGED/,
         );
-        input = { nomination, disclosure, beneficiaryKey, ticket: check.ticket, salt, confirmed: true };
+        input = { chainId, quote: stable, nomination, disclosure, beneficiaryKey, ticket: check.ticket, salt, confirmed: true };
         userId = "90002";
         await assert.rejects(
           svc.check(undefined, nomination, disclosure, beneficiaryKey),
@@ -313,6 +320,7 @@ for (const { viaNomination, visibility } of [
       if (disclosure) {
         await assert.rejects(svc.bind({ ...input, disclosure: { ...disclosure, purpose: "Changed" } }), /RECIPIENT_CHANGED/);
       }
+      await assert.rejects(svc.bind({...input, chainId: chainId === 56 ? 8453 : 56}), /RECIPIENT_CHANGED/);
       const route = await svc.bind(input);
       if (nomination) {
         assert.deepEqual(svc.nominations.detail(nomination).receipts, []);
@@ -330,7 +338,7 @@ for (const { viaNomination, visibility } of [
         const guessedKey = randomBytes(32).toString("hex");
         const guessed = await svc.check(input.recipient, nomination, disclosure, guessedKey);
         await assert.rejects(svc.bind({ ...input, beneficiaryKey: guessedKey, ticket: guessed.ticket }), /RECIPIENT_CHANGED/);
-        assert.equal(JSON.stringify(svc.status(token)).includes(beneficiaryKey), false);
+        assert.equal(JSON.stringify(svc.status(token, chainId)).includes(beneficiaryKey), false);
       }
       recipient = route.address;
       assert.equal(route.token, token);
@@ -341,45 +349,47 @@ for (const { viaNomination, visibility } of [
         ),
         false,
       );
-      assert.equal(JSON.stringify(svc.status(token)).includes("friend"), visibility === "public");
-      if (visibility) assert.equal(svc.status(token).disclosure.visibility, visibility);
+      assert.equal(JSON.stringify(svc.status(token, chainId)).includes("friend"), visibility === "public");
+      if (visibility) assert.equal(svc.status(token, chainId).disclosure.visibility, visibility);
       height++;
       transfers = [
         {
-          ...transfer(BSC_USDT, other, recipient, u("999")),
+          ...transfer(stable, other, recipient, amount("999")),
           blockNumber: height,
         },
         {
-          ...transfer(BSC_USDT, processor, recipient, u("33")),
+          ...transfer(stable, processor, recipient, amount("33")),
           blockNumber: height,
         },
       ];
       userId = "90002";
       await svc.tick();
-      assert.equal(svc.status(token).issue, "X_ACCOUNT_CHANGED");
+      assert.equal(svc.status(token, chainId).issue, "X_ACCOUNT_CHANGED");
       assert.equal(bridgeCalls, 0);
-      assert.equal(svc.status(token).received, "33.0");
+      assert.equal(svc.status(token, chainId).received, "33.0");
       userId = "90001";
       await Promise.all([svc.tick(), svc.tick()]);
-      assert.equal(bridgeCalls, 1);
+      assert.equal(bridgeCalls, chainId === 56 ? 1 : 0);
       svc.close();
       svc = start();
+      if (chainId === 56) {
+        await svc.tick();
+        assert.equal(svc.status(token, chainId).stage, "bridge");
+        destinationReady = true;
+        await svc.tick();
+      }
+      assert.equal(svc.status(token, chainId).stage, "base");
       await svc.tick();
-      assert.equal(svc.status(token).stage, "bridge");
-      destinationReady = true;
-      await svc.tick();
-      assert.equal(svc.status(token).stage, "base");
-      await svc.tick();
-      assert.equal(svc.status(token).stage, "approve");
+      assert.equal(svc.status(token, chainId).stage, "approve");
       for (let i = 0; i < 8; i++) await svc.tick();
       assert.equal(submissions, 2);
-      assert.equal(svc.status(token).stage, "matching");
-      assert.equal(svc.status(token).paid, "0.0");
+      assert.equal(svc.status(token, chainId).stage, "matching");
+      assert.equal(svc.status(token, chainId).paid, "0.0");
       delivered = true;
       await svc.tick();
       await svc.tick();
-      assert.equal(svc.status(token).stage, "paid");
-      assert.equal(svc.status(token).paid, "29.92");
+      assert.equal(svc.status(token, chainId).stage, "paid");
+      assert.equal(svc.status(token, chainId).paid, "29.92");
       if (nomination)
         assert.equal(
           svc.nominations.list(0, svc.nominations.detail(nomination).owner)
@@ -388,8 +398,8 @@ for (const { viaNomination, visibility } of [
         );
       if (nomination)
         assert.deepEqual(svc.nominations.detail(nomination).receipts, [
-          { token, stage: "paid", paidCents: "2992" },
+          { token, chainId, stage: "paid", paidCents: "2992" },
         ]);
-      assert.equal(bridgeCalls, 1);
+      assert.equal(bridgeCalls, chainId === 56 ? 1 : 0);
     },
   );

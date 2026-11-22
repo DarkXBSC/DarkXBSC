@@ -4,6 +4,7 @@ import { useApp } from "../lib/context";
 import "../bags-market.css";
 
 export type Asset = {
+  chain?: "bsc" | "base";
   address: string;
   name: string;
   symbol: string;
@@ -29,40 +30,24 @@ type Board = {
 };
 const empty: Board = { groups: {}, source: "", checkedAt: "" };
 const addressPattern = /^0x[\da-f]{40}$/i;
-let current: Board | undefined;
-let expires = 0;
-let pending: Promise<Board> | undefined;
-
-async function fetchBoard(): Promise<Board> {
-  const response = await fetch("/api/market/board", {
-    signal: AbortSignal.timeout(22000),
-  });
+const snapshots = new Map<string, { board: Board; expires: number }>();
+const requests = new Map<string, Promise<Board>>();
+async function fetchBoard(chain: string): Promise<Board> {
+  const response = await fetch("/api/market/board?chain=" + chain, { signal: AbortSignal.timeout(22000) });
   if (response.ok) return { ...(await response.json()), source: "GMGN" };
-  const fallback = await fetch("/api/market?query=flap", {
-    signal: AbortSignal.timeout(15000),
-  });
+  const fallback = await fetch("/api/market?query=flap&chain=" + chain, { signal: AbortSignal.timeout(15000) });
   if (!fallback.ok) throw Error("MARKET_UNAVAILABLE");
   const result = await fallback.json();
-  return {
-    groups: { results: result.rows },
-    checkedAt: result.checkedAt,
-    source: "DEX Screener",
-  };
+  return { groups: { results: result.rows }, checkedAt: result.checkedAt, source: "DEX Screener" };
 }
-function readBoard(force: boolean) {
-  if (!force && current && Date.now() < expires)
-    return Promise.resolve(current);
-  if (!pending)
-    pending = fetchBoard()
-      .then((board) => {
-        current = board;
-        expires = Date.now() + 45000;
-        return board;
-      })
-      .finally(() => {
-        pending = undefined;
-      });
-  return pending;
+function readBoard(force: boolean, chain: string) {
+  const hit = snapshots.get(chain);
+  if (!force && hit && Date.now() < hit.expires) return Promise.resolve(hit.board);
+  if (!requests.has(chain)) requests.set(chain, fetchBoard(chain).then(board => {
+    snapshots.set(chain, {board, expires: Date.now() + 45000});
+    return board;
+  }).finally(() => requests.delete(chain)));
+  return requests.get(chain)!;
 }
 
 type DexPair = {
@@ -73,7 +58,7 @@ type DexPair = {
 };
 let pricedSnapshot: Board | undefined;
 let priceRequest: Promise<Board> | undefined;
-function withDailyChanges(board: Board) {
+function withDailyChanges(board: Board, chain: string) {
   if (pricedSnapshot === board && priceRequest) return priceRequest;
   pricedSnapshot = board;
   const addresses = [
@@ -88,7 +73,7 @@ function withDailyChanges(board: Board) {
   for (let i = 0; i < addresses.length; i += 30) {
     const list = addresses.slice(i, i + 30);
     batches.push(
-      fetch("https://api.dexscreener.com/tokens/v1/bsc/" + list.join(","), {
+      fetch("https://api.dexscreener.com/tokens/v1/" + chain + "/" + list.join(","), {
         credentials: "omit",
         referrerPolicy: "no-referrer",
         signal: AbortSignal.timeout(6500),
@@ -105,7 +90,7 @@ function withDailyChanges(board: Board) {
         const address = p.baseToken?.address?.toLowerCase();
         const change = p.priceChange?.h24;
         if (
-          p.chainId !== "bsc" ||
+          p.chainId !== chain ||
           !address ||
           !addressPattern.test(address) ||
           typeof change !== "number" ||
@@ -134,7 +119,8 @@ function withDailyChanges(board: Board) {
   return priceRequest;
 }
 
-export function useMarketBoard(active = true) {
+export function useMarketBoard(active = true, chain = "bsc") {
+  const current = snapshots.get(chain)?.board;
   const [board, setBoard] = useState<Board>(current || empty);
   const [status, setStatus] = useState<"ready" | "loading" | "error">(
     current ? "ready" : "loading",
@@ -142,18 +128,20 @@ export function useMarketBoard(active = true) {
   const [revision, setRevision] = useState(0);
   useEffect(() => {
     if (!active) return;
+    setBoard(snapshots.get(chain)?.board || empty);
+    setStatus(snapshots.has(chain) ? "ready" : "loading");
     let mounted = true;
     let seq = 0;
     async function refresh(force: boolean) {
       const seqId = ++seq;
       const live = () => mounted && seq === seqId;
       try {
-        const next = await readBoard(force);
+        const next = await readBoard(force, chain);
         if (!live()) return;
         setBoard(next);
         setStatus("ready");
         if (next.source === "GMGN") {
-          const priced = await withDailyChanges(next);
+          const priced = await withDailyChanges(next, chain);
           if (live()) setBoard(priced);
         }
       } catch {
@@ -168,7 +156,7 @@ export function useMarketBoard(active = true) {
       mounted = false;
       window.clearInterval(timer);
     };
-  }, [active, revision]);
+  }, [active, revision, chain]);
   return { board, status, reload: () => setRevision((r) => r + 1) };
 }
 export function TokenArt({ asset }: { asset: Asset }) {
@@ -219,7 +207,7 @@ export function TickerStrip({
   return (
     <div
       className="bags-ticker"
-      aria-label={t("BSC market ticker", "BSC 行情带")}
+      aria-label={t("Market ticker", "行情带")}
     >
       {list.length > 0 && (
         <div className="bags-ticker-track">
@@ -268,7 +256,7 @@ export default function MarketTicker() {
     <TickerStrip
       rows={board.groups.bonded || board.groups.results || []}
       onInspect={(r) =>
-        navigate("/app/explore?token=" + r.address, {
+        navigate("/app/explore?chain=" + (r.chain || "bsc") + "&token=" + r.address, {
           state: { tickerAsset: r },
         })
       }

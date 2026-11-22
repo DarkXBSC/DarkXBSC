@@ -15,6 +15,18 @@ export function createNominationBook({
     UNIQUE(owner,beneficiaryKey));
     CREATE TABLE IF NOT EXISTS nominationRoutes(token TEXT PRIMARY KEY, nomination TEXT NOT NULL);
     CREATE INDEX IF NOT EXISTS nominationRoutes_by_id ON nominationRoutes(nomination);`);
+  if (!db.prepare("PRAGMA table_info(nominationRoutes)").all().some(c => c.name === "chain")) {
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      if (!db.prepare("PRAGMA table_info(nominationRoutes)").all().some(c => c.name === "chain")) db.exec(`
+      ALTER TABLE nominationRoutes RENAME TO nominationRoutes_old;
+      CREATE TABLE nominationRoutes(token TEXT NOT NULL,nomination TEXT NOT NULL,chain INTEGER NOT NULL DEFAULT 56,PRIMARY KEY(chain,token));
+      INSERT INTO nominationRoutes SELECT token,nomination,56 FROM nominationRoutes_old;
+      DROP TABLE nominationRoutes_old;
+      CREATE INDEX nominationRoutes_by_id ON nominationRoutes(nomination);`);
+      db.exec("COMMIT");
+    } catch (e) { db.exec("ROLLBACK"); throw e; }
+  }
   const challenges = new Map();
   function challenge(input, origin) {
     const address = getAddress(input.address);
@@ -94,22 +106,24 @@ export function createNominationBook({
     if (!row) throw Error("NOMINATION_NOT_FOUND");
     const routes = db
       .prepare(
-        `SELECT r.token,r.received,b.stage,b.cents
-      FROM nominationRoutes n JOIN routes r ON r.token=n.token
+        `SELECT r.token,r.chain AS chainId,r.received,b.stage,b.cents
+      FROM nominationRoutes n JOIN routes r ON r.token=n.token AND r.chain=n.chain
       LEFT JOIN batches b ON b.route=r.idx WHERE n.nomination=? ORDER BY r.idx,b.id`,
       )
       .all(id);
     const funded = new Map();
     for (const r of routes) {
       if (BigInt(r.received) === 0n && !r.stage) continue;
-      const summary = funded.get(r.token) ?? {
+      const key = r.chainId + ":" + r.token;
+      const summary = funded.get(key) ?? {
+        chainId: r.chainId,
         token: r.token,
         paidCents: 0n,
         stage: "collecting",
       };
       summary.stage = r.stage || "collecting";
       summary.paidCents += BigInt(r.cents || 0);
-      funded.set(r.token, summary);
+      funded.set(key, summary);
     }
     return {
       ...row,
@@ -134,7 +148,7 @@ export function createNominationBook({
             paidBeneficiaries: db
               .prepare(
                 `SELECT COUNT(DISTINCT n.beneficiaryKey) AS total FROM nominations n
-        JOIN nominationRoutes nr ON nr.nomination=n.id JOIN routes r ON r.token=nr.token JOIN batches b ON b.route=r.idx
+        JOIN nominationRoutes nr ON nr.nomination=n.id JOIN routes r ON r.token=nr.token AND r.chain=nr.chain JOIN batches b ON b.route=r.idx
         WHERE n.owner=? AND b.cents!='0'`,
               )
               .get(owner).total,

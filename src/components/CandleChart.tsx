@@ -18,7 +18,7 @@ type Candle = {
 };
 const number = (v: number) =>
   v.toLocaleString("en", { maximumSignificantDigits: 6 });
-export default function CandleChart({ address }: { address: string }) {
+export default function CandleChart({ address, chain = "bsc" }: { address: string; chain?: "bsc" | "base" }) {
   const { t, dark } = useApp(),
     host = useRef<HTMLDivElement>(null);
   const [period, setPeriod] = useState("5m"),
@@ -33,7 +33,7 @@ export default function CandleChart({ address }: { address: string }) {
     setFocus(null);
     (async () => {
       const r = await fetch(
-        "/api/market/candles?" + new URLSearchParams({ address, period }),
+        "/api/market/candles?" + new URLSearchParams({ address, period, chain }),
         { signal: abort.signal },
       );
       const body = await r.json();
@@ -47,7 +47,7 @@ export default function CandleChart({ address }: { address: string }) {
         setState(e.message === "GMGN_BUSY" ? "busy" : "error");
     });
     return () => abort.abort();
-  }, [address, period, revision]);
+  }, [address, period, revision, chain]);
   useEffect(() => {
     if (!host.current || !rows.length) return;
     const line = dark ? "#2e2e2e" : "#e5e5e2",
@@ -175,7 +175,7 @@ export default function CandleChart({ address }: { address: string }) {
       )}
       <div ref={host} className="chart-canvas" hidden={state !== "ready"} />
       <div className="chart-credit">
-        GMGN · BSC · UTC{" "}
+        GMGN · {chain === "base" ? "Base" : "BSC"} · UTC{" "}
         <a href="https://www.tradingview.com/" target="_blank" rel="noreferrer">
           TradingView Lightweight Charts™ · © 2025 TradingView, Inc.
         </a>

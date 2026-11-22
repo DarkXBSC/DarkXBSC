@@ -83,6 +83,14 @@
       "rpc": "https://rpc.mainnet.chain.robinhood.com",
       "explorer": "https://robinhoodchain.blockscout.com",
       "contracts": {}
+    },
+    "base": {
+      "chainId": 8453,
+      "name": "Base",
+      "symbol": "ETH",
+      "rpc": "https://base-rpc.publicnode.com",
+      "explorer": "https://basescan.org",
+      "contracts": {}
     }
   },
   "brand": "Dark"

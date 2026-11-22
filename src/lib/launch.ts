@@ -10,12 +10,13 @@ import {
   keccak256,
   toUtf8Bytes,
   TransactionRequest,
+  Transaction,
   AbiCoder,
   isAddress,
 } from "ethers";
-import { abi, Config, Contract, rpc, ZeroAddress, units, erc20 } from "./chain";
+import { abi, chainInfo, flapFor, LaunchChain, Config, Contract, rpc, ZeroAddress, units, erc20 } from "./chain";
 export type LaunchForm = {
-  chain: "bsc";
+  chain: LaunchChain;
   name: string;
   symbol: string;
   description: string;
@@ -38,7 +39,7 @@ export type LaunchForm = {
 };
 export type Preview = {
   request: { to: string; data: string; value: string };
-  chain: "bsc";
+  chain: LaunchChain;
   account: string;
   fingerprint: string;
   gas: string;
@@ -93,8 +94,10 @@ export async function prepare(
     (!isAddress(form.creator) || form.creator === ZeroAddress)
   )
     throw Error("INVALID_ADDRESS");
-  if (form.chain !== "bsc") throw Error("BSC_ONLY");
-  const p = rpc("bsc");
+  if (!["bsc", "base"].includes(form.chain)) throw Error("UNSUPPORTED_LAUNCH_CHAIN");
+  if (form.chain === "base" && !["x", "wallet"].includes(form.route)) throw Error("ROUTE_BSC_ONLY");
+  const protocol = flapFor(config, form.chain);
+  const p = rpc(form.chain);
   let to = "",
     data = "",
     value = 0n,
@@ -105,14 +108,14 @@ export async function prepare(
     resultTypes: string[] = [],
     symbol = "";
   const portal = new Contract(
-    config.protocols.flap.portal,
+    protocol.portal,
     await abi("IPortal"),
     p,
   );
   const cfg = await portal.getQuoteTokenConfiguration(form.quote);
   if (Number(cfg.enabled) === 0) throw Error("QUOTE_DISABLED");
   let decimals = 18;
-  symbol = "BNB";
+  symbol = chainInfo[form.chain].symbol;
   if (form.quote !== ZeroAddress) {
     const c = new Contract(form.quote, erc20, p);
     [decimals, symbol] = await Promise.all([c.decimals(), c.symbol()]);
@@ -166,7 +169,7 @@ export async function prepare(
   const r = await fetch("/api/flap/salt", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ taxed }),
+    body: JSON.stringify({ taxed, chainId: chainInfo[form.chain].id }),
   });
   if (!r.ok) throw Error("SALT_MINING_FAILED");
   const mined = await r.json();
@@ -181,6 +184,7 @@ export async function prepare(
       form.nomination,
       form.disclosure,
       form.beneficiaryKey,
+      chainInfo[form.chain].id,
     );
   }
   if ((await p.getCode(predicted)) !== "0x") throw Error("SALT_ALREADY_USED");
@@ -219,7 +223,7 @@ export async function prepare(
   };
   if (form.route === "reserve" || form.route === "commission") {
     const factory =
-      config.chains.bsc.contracts[
+      config.chains[form.chain].contracts[
         form.route === "commission" ? "commissionFactory" : "reserveFactory"
       ]?.address;
     if (!factory) throw Error("FACTORY_NOT_DEPLOYED");
@@ -227,7 +231,7 @@ export async function prepare(
       form.route === "commission" ? bps(form.commissionShare || "") : 0;
     if (form.route === "commission" && share === 0)
       throw Error("COMMISSION_SHARE_REQUIRED");
-    to = config.protocols.flap.vaultPortal;
+    to = protocol.vaultPortal;
     params = {
       ...base,
       vaultFactory: factory,
@@ -239,7 +243,7 @@ export async function prepare(
     interfaceName = "IVaultPortal";
     method = "newTokenV6WithVault";
   } else {
-    to = config.protocols.flap.portal;
+    to = protocol.portal;
     params = { ...base, beneficiary: recipient };
     interfaceName = "IPortal";
     method = "newTokenV6";
@@ -264,6 +268,13 @@ export async function prepare(
   const gas = await p.estimateGas(request);
   const fees = await p.getFeeData();
   if (fees.gasPrice === null) throw Error("FEE_ESTIMATE_UNAVAILABLE");
+  let networkFee = gas * (form.chain === "base" ? (fees.maxFeePerGas || fees.gasPrice) : fees.gasPrice);
+  if (form.chain === "base") {
+    const oracle = new Contract("0x420000000000000000000000000000000000000F", ["function getL1Fee(bytes) view returns(uint256)", "function getOperatorFee(uint256) view returns(uint256)"], p);
+    const encoded = Transaction.from({to, data, value, chainId: 8453, nonce: await p.getTransactionCount(account), gasLimit: gas, gasPrice: fees.gasPrice, type: 0}).unsignedSerialized;
+    const [l1, operator] = await Promise.all([oracle.getL1Fee(encoded), oracle.getOperatorFee(gas)]);
+    networkFee += 3n * l1 + 2n * operator;
+  }
   return {
     request: { to, data, value: value.toString() },
     chain: form.chain,
@@ -273,7 +284,7 @@ export async function prepare(
     payTicket,
     squarePayProfile,
     gas: gas.toString(),
-    networkFee: (gas * fees.gasPrice).toString(),
+    networkFee: networkFee.toString(),
     predicted,
     createdAt: Date.now(),
     label: form.name + " / " + form.symbol,

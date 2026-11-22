@@ -130,7 +130,7 @@ export default function Home({ entry = false }: { entry?: boolean }) {
             <b className="word-fill" data-fill="Flap">
               Flap
             </b>
-            <small>BSC</small>
+            <small>BSC + Base</small>
           </span>
           <span data-cursor>
             <b className="word-fill" data-fill={t("Giving", "公益")}>

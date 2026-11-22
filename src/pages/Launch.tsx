@@ -2,6 +2,7 @@ import { composeLaunchImage } from "../lib/launch-image";
 import BinanceRecipientCheck from "../components/BinanceRecipientCheck";
 import {
   BSC_USDT,
+  BASE_USDC,
   type TaxRoute,
   bindXTax,
   checkRecipient,
@@ -27,6 +28,9 @@ import "../bags-launch.css";
 import { CopyText } from "../components/Frame";
 import {
   Chain,
+  LaunchChain,
+  chainInfo,
+  flapFor,
   Contract,
   rpc,
   abi,
@@ -156,7 +160,7 @@ function LaunchFormView() {
         const draft = JSON.parse(
           localStorage.getItem("tiger-genesis:draft") || "{}",
         );
-        if (draft.chain && draft.chain !== "bsc")
+        if (draft.chain && !["bsc", "base"].includes(draft.chain))
           return {
             ...initial,
             name: draft.name || "",
@@ -186,8 +190,8 @@ function LaunchFormView() {
         return {
           ...initial,
           ...draft,
-          chain: "bsc",
-          route,
+          chain: draft.chain === "base" ? "base" : "bsc",
+          route: draft.chain === "base" && !["x", "wallet"].includes(route) ? "x" : route,
           quote,
           social: "",
           beneficiaryKey: initial.beneficiaryKey,
@@ -229,10 +233,14 @@ function LaunchFormView() {
       chain: Chain;
     } | null>(null),
     [pending, setPending] = useState(false);
+  const network = chainInfo[form.chain];
+  const chainLabel = form.chain === "base" ? "Base" : "BSC";
+  const stableAddress = form.chain === "base" ? BASE_USDC : BSC_USDT;
+  const stableSymbol = form.chain === "base" ? "USDC" : "USDT";
   const stablePool = form.route === "x" || form.route === "binance";
   const compatiblePool =
     !stablePool ||
-    form.quote.toLowerCase() === BSC_USDT.toLowerCase() ||
+    form.quote.toLowerCase() === stableAddress.toLowerCase() ||
     (form.route === "x" && poolConversion);
   useEffect(() => {
     if (
@@ -253,6 +261,7 @@ function LaunchFormView() {
       nomination,
       form.disclosure,
       form.beneficiaryKey,
+      network.id,
     ).then((result) => {
       if (active) {
         setPayCheck(result);
@@ -263,6 +272,7 @@ function LaunchFormView() {
       active = false;
     };
   }, [
+    form.chain,
     form.route,
     form.social,
     form.disclosure,
@@ -330,12 +340,13 @@ function LaunchFormView() {
   useEffect(() => {
     const abort = new AbortController();
     setQuoteStatus("loading");
+    setQuotes([]);
     fetch("/api/flap/quotes", { signal: abort.signal })
       .then(async (response) => {
         if (!response.ok) throw Error("QUOTE_DIRECTORY_UNAVAILABLE");
         const data = await response.json();
         const items = data.chains?.find(
-          (chain: { chainId: number }) => chain.chainId === 56,
+          (chain: { chainId: number }) => chain.chainId === network.id,
         )?.quoteTokens;
         if (!Array.isArray(items)) throw Error("QUOTE_DIRECTORY_UNAVAILABLE");
         if (!abort.signal.aborted) {
@@ -347,7 +358,14 @@ function LaunchFormView() {
         if (!abort.signal.aborted) setQuoteStatus("error");
       });
     return () => abort.abort();
-  }, [quoteRetry]);
+  }, [quoteRetry, form.chain]);
+  function changeChain(chain: LaunchChain) {
+    if (chain === form.chain || working || pending || busy) return;
+    generation.current++;
+    setPayCheck(null); setXConsent(false); setPublishConsent(false);
+    setPreview(null); setStep(1); setFilter("all"); setQ(""); setQuotes([]);
+    setForm(f => ({...f, chain, quote: ZeroAddress, firstBuy: "0", route: chain === "base" && !["x", "wallet"].includes(f.route) ? "x" : f.route}));
+  }
   function changeRoute(route: TaxRoute) {
     if (nomination || route === form.route) return;
     setPayCheck(null);
@@ -501,13 +519,13 @@ function LaunchFormView() {
       const uploaded = await upload();
       if (uploaded.quote !== ZeroAddress && Number(uploaded.firstBuy) > 0) {
         setWorking("APPROVING");
-        const c = new Contract(uploaded.quote, erc20, rpc("bsc"));
+        const c = new Contract(uploaded.quote, erc20, rpc(uploaded.chain));
         const amount = units(uploaded.firstBuy, Number(await c.decimals()));
         const target = ["reserve", "commission"].includes(uploaded.route)
-          ? config.protocols.flap.vaultPortal
-          : config.protocols.flap.portal;
+          ? flapFor(config, uploaded.chain).vaultPortal
+          : flapFor(config, uploaded.chain).portal;
         await approveExact(
-          "bsc",
+          uploaded.chain,
           uploaded.quote,
           target,
           amount,
@@ -558,6 +576,7 @@ function LaunchFormView() {
           nomination,
           form.disclosure,
           form.beneficiaryKey,
+          network.id,
         );
         if (
           checked.state !== "READY" ||
@@ -572,6 +591,7 @@ function LaunchFormView() {
               nomination,
               form.disclosure,
               form.beneficiaryKey,
+              network.id,
             )) !== preview.params.beneficiary)
         ) {
           setPreview(null);
@@ -599,8 +619,8 @@ function LaunchFormView() {
       });
       setMessage(
         t(
-          "Token creation confirmed. Register it to display it in the new Dark directory.",
-          "代币创建已确认，登记后即可显示在新 Dark 目录中。",
+          "Token creation confirmed. Your transaction receipt is available below.",
+          "代币创建已确认，可在下方查看链上回执。",
         ),
       );
     } catch (e: any) {
@@ -669,8 +689,8 @@ function LaunchFormView() {
     },
     {
       id: "wallet",
-      label: t("BSC wallet", "BSC 钱包"),
-      full: t("BSC wallet", "BSC 钱包"),
+      label: t(`${chainLabel} wallet`, `${chainLabel} 钱包`),
+      full: t(`${chainLabel} wallet`, `${chainLabel} 钱包`),
       icon: <Wallet />,
     },
   ] as const;
@@ -683,7 +703,7 @@ function LaunchFormView() {
   );
   const quoteLabel =
     selectedQuote?.symbol ||
-    (form.quote === ZeroAddress ? "BNB" : short(form.quote));
+    (form.quote === ZeroAddress ? network.symbol : short(form.quote));
   const needsRecipient = stablePool || form.route === "square";
   const canPreview =
     (form.route !== "commission" ||
@@ -731,8 +751,8 @@ function LaunchFormView() {
       : form.route === "x"
         ? xEnabled && xMinimum && xMinimum === xMaximum
           ? t(
-              `Every ${Number(xMinimum)} USDT available after collection or conversion starts an X Money payout.`,
-              `每累计 ${Number(xMinimum)} USDT 已到账（含兑换所得），自动启动 X Money 付款。`,
+              `Every ${Number(xMinimum)} ${stableSymbol} available after collection or conversion starts an X Money payout.`,
+              `每累计 ${Number(xMinimum)} ${stableSymbol} 已到账（含兑换所得），自动启动 X Money 付款。`,
             )
           : t(
               "Flap trading tax is settled via X Money.",
@@ -754,8 +774,8 @@ function LaunchFormView() {
                   "代币创建者与 Flap Guardian 可以支取此金库的资产。",
                 )
               : t(
-                  "Flap distributes this token’s tax to the selected BSC wallet.",
-                  "Flap 将这枚代币的税收分配到指定 BSC 钱包。",
+                  `Flap distributes this token’s tax to the selected ${chainLabel} wallet.`,
+                  `Flap 将这枚代币的税收分配到指定 ${chainLabel} 钱包。`,
                 );
   return (
     <div className="bags-launch">
@@ -771,9 +791,7 @@ function LaunchFormView() {
           className="issue-networks"
           aria-label={t("Launch network and protocol", "发行网络与协议")}
         >
-          <span>
-            <BnbMark /> BSC
-          </span>
+          {(["bsc", "base"] as const).map(chain => <button type="button" key={chain} aria-pressed={form.chain === chain} disabled={!!working || busy || pending || !!completed} onClick={() => changeChain(chain)}>{chain === "bsc" ? <BnbMark /> : <span className="base-mark" />} {chain === "bsc" ? "BSC" : "Base"}</button>)}
           <span>
             <Layers size={15} /> Flap V3
           </span>
@@ -814,19 +832,20 @@ function LaunchFormView() {
             {t("View the creation receipt", "查看创建回执")}
             <ArrowRight size={15} />
           </a>
-          <button
+          {config?.chains[completed.chain].contracts.registry && <button
             className="button primary"
             onClick={() => void register()}
-            disabled={busy}
+            disabled={busy || !config?.chains[completed.chain].contracts.registry}
           >
             {t("Register in Dark", "登记到 Dark")}
-          </button>
+          </button>}
           <p>
             {t(
-              "Registration is a separate on-chain transaction. It does not imply official endorsement.",
-              "登记是独立的链上交易，不代表 Dark 官方背书。",
+              completed.chain === "base" ? "Created through Flap on Base. Market indexing can take time; your creation receipt is the primary confirmation." : "Registration is a separate on-chain transaction. It does not imply official endorsement.",
+              completed.chain === "base" ? "已通过 Base 上的 Flap 创建。行情收录可能有延迟，请以创建回执为准。" : "登记是独立的链上交易，不代表 Dark 官方背书。",
             )}
           </p>
+          <Link className="button" to={"/app/explore?chain=" + completed.chain + "&token=" + completed.token}>{t("Open market & chart", "打开行情与 K 线")}</Link>
           {form.route === "commission" && (
             <Link
               className="button primary"
@@ -839,7 +858,7 @@ function LaunchFormView() {
             <Link
               className="button"
               to={
-                "/app/impact?token=" + completed.token + "&tx=" + completed.hash
+                "/app/impact?chain=" + completed.chain + "&token=" + completed.token + "&tx=" + completed.hash
               }
             >
               {t("Track tax distributions", "查看税收去向")}
@@ -880,7 +899,7 @@ function LaunchFormView() {
             </div>
             <div>
               <dt>{t("Network", "网络")}</dt>
-              <dd>{"BSC / Flap V3"}</dd>
+              <dd>{chainLabel + " / Flap V3"}</dd>
             </div>
             <div>
               <dt>{t("Tax beneficiary", "税收受益人")}</dt>
@@ -913,10 +932,10 @@ function LaunchFormView() {
                     "Operator-controlled collection · ",
                     "运营方控制归集地址 · ",
                   )}
-                  {xMinimum} USDT{" "}
+                  {xMinimum} {stableSymbol}{" "}
                   {t(
                     "minimum per batch after conversion · confirmed receipts in USD",
-                    "起付 · 非 USDT 底池由运营方兑换后结算 · 按美元付款凭证核对",
+                    "起付 · 以稳定币实际到账计入批次 · 按美元付款凭证核对",
                   )}
                 </dd>
               </div>
@@ -961,7 +980,7 @@ function LaunchFormView() {
               <div>
                 <dt>
                   {form.route === "x"
-                    ? t("BSC tax collection address", "BSC 税收归集地址")
+                    ? t(`${chainLabel} tax collection address`, `${chainLabel} 税收归集地址`)
                     : form.route === "square"
                       ? t(
                           "Author’s verified BSC wallet",
@@ -1004,15 +1023,15 @@ function LaunchFormView() {
             </div>
             <div>
               <dt>{t("Estimated network fee", "预计网络费")}</dt>
-              <dd>{formatEther(preview.networkFee)} BNB</dd>
+              <dd>{formatEther(preview.networkFee)} {network.symbol}</dd>
             </div>
             <div>
-              <dt>{t("Estimated BNB total", "预计 BNB 总支出")}</dt>
+              <dt>{t(`Estimated ${network.symbol} total`, `预计 ${network.symbol} 总支出`)}</dt>
               <dd>
                 {formatEther(
                   BigInt(preview.networkFee) + BigInt(preview.request.value),
                 )}{" "}
-                BNB
+                {network.symbol}
               </dd>
             </div>
             <div>
@@ -1196,7 +1215,7 @@ function LaunchFormView() {
             <h2 id="issue-share-title">{t("share fees", "分配交易税")}</h2>
             <div className="issue-channels">
               {channels
-                .filter((c) => ["x", "commission", "wallet"].includes(c.id))
+                .filter((c) => (form.chain === "base" ? ["x", "wallet"] : ["x", "commission", "wallet"]).includes(c.id))
                 .map(({ id, label, full, icon }) => (
                   <button
                     type="button"
@@ -1212,7 +1231,7 @@ function LaunchFormView() {
                   </button>
                 ))}
             </div>
-            <details
+            {form.chain === "bsc" && <details
               className="issue-other-routes"
               open={
                 ["binance", "square", "reserve"].includes(form.route) ||
@@ -1250,7 +1269,7 @@ function LaunchFormView() {
                   )}
                 </p>
               )}
-            </details>
+            </details>}
             {form.route === "commission" && (
               <label>
                 {t(
@@ -1345,7 +1364,7 @@ function LaunchFormView() {
             )}
             {form.route === "wallet" && (
               <label>
-                {t("BSC tax recipient", "BSC 税收接收地址")}
+                {t(`${chainLabel} tax recipient`, `${chainLabel} 税收接收地址`)}
                 <input
                   value={form.creator}
                   onChange={(e) => update("creator", e.target.value)}
@@ -1430,8 +1449,8 @@ function LaunchFormView() {
                 </label>
                 <small>
                   {t(
-                    "The purpose, image and project description are public. Use only information approved for publication. BSC wallets and transactions are public.",
-                    "公益用途、图片和项目描述会公开，请仅填写获准公开的信息。BSC 钱包地址与交易可查。",
+                    "The purpose, image and project description are public. Use only information approved for publication. Blockchain wallets and transactions are public.",
+                    "公益用途、图片和项目描述会公开，请仅填写获准公开的信息。链上钱包地址与交易可查。",
                   )}
                 </small>
               </div>
@@ -1522,8 +1541,8 @@ function LaunchFormView() {
                       {payCheck?.input === (nomination || form.social) &&
                         payCheck.quote && (
                           <small className="quote-result">
-                            {t(" Bridge quote minimum", " 跨链报价最低可得")} ·{" "}
-                            {payCheck.quote.inputUSDT} USDT →{" "}
+                            {t(form.chain === "base" ? "Settlement batch" : "Bridge quote minimum", form.chain === "base" ? "结算批次" : "跨链报价最低可得")} ·{" "}
+                            {payCheck.quote.inputUSDT} {payCheck.quote.inputSymbol || stableSymbol} →{" "}
                             {payCheck.quote.minimumUSDC} USDC
                           </small>
                         )}
@@ -1537,20 +1556,20 @@ function LaunchFormView() {
                 >
                   <p>
                     {t(
-                      "Flap sends this pool’s tax asset to a dedicated BSC address. Dark converts non-USDT tax to USDT before bridging to Base USDC. A Peer buyer pays the recipient USD on X Money.",
-                      "Flap 将底池资产税收转入专属 BSC 地址。Dark 先将非 USDT 税收兑换为 USDT，再跨链至 Base USDC，Peer 买家将美元付到受益人的 X Money。",
+                      form.chain === "base" ? "Flap sends tax to a dedicated Base address. ETH converts to USDC automatically with price protection. Peer matches a buyer who pays USD to the recipient on X Money." : "Flap sends tax to a dedicated BSC address. BNB converts to USDT automatically with price protection, then bridges to Base USDC. Other pool assets use operator conversion. Peer matches the USD payer on X Money.",
+                      form.chain === "base" ? "Flap 将税收转入专属 Base 地址。ETH 通过价格检查后自动兑换 USDC，Peer 匹配买家向受益人的 X Money 支付美元。" : "Flap 将税收转入专属 BSC 地址。BNB 通过价格检查后自动兑换 USDT，再跨链为 Base USDC；其他底池资产由运营方兑换。Peer 匹配买家向 X Money 支付美元。",
                     )}
                   </p>
                   {gasSponsored && (
                     <p>
                       {xMinimum === xMaximum
                         ? t(
-                            `Every ${Number(xMinimum)} USDT in confirmed tax starts a payment batch.`,
-                            `每累计 ${Number(xMinimum)} USDT 已确认税收，自动启动一批付款。`,
+                            `Every ${Number(xMinimum)} ${stableSymbol} in confirmed tax starts a payment batch.`,
+                            `每累计 ${Number(xMinimum)} ${stableSymbol} 已确认税收，自动启动一批付款。`,
                           )
                         : t(
-                            `Settlement starts at ${xMinimum} USDT, up to ${xMaximum} USDT per batch.`,
-                            `累计 ${xMinimum} USDT 后结算，每批最多 ${xMaximum} USDT。`,
+                            `Settlement starts at ${xMinimum} ${stableSymbol}, up to ${xMaximum} ${stableSymbol} per batch.`,
+                            `累计 ${xMinimum} ${stableSymbol} 后结算，每批最多 ${xMaximum} ${stableSymbol}。`,
                           )}{" "}
                       {t(
                         "Dark covers settlement gas on BSC and Base.",
@@ -1664,7 +1683,7 @@ function LaunchFormView() {
                 >
                   <img
                     loading="lazy"
-                    src={"/api/quote-logo/56/" + x.address}
+                    src={"/api/quote-logo/" + network.id + "/" + x.address}
                     alt=""
                   />
                   <span>
@@ -1706,8 +1725,8 @@ function LaunchFormView() {
                 <p>
                   {form.route === "x"
                     ? t(
-                        "USDT fees settle directly. Dark converts BNB and other pool assets to BSC USDT before payout.",
-                        "USDT 税收直接结算。BNB 和其他底池资产先由 Dark 兑换成 BSC USDT，再计入付款批次。",
+                        form.chain === "base" ? "ETH taxes convert automatically to Base USDC. Other pool assets require operator conversion before settlement." : "USDT fees settle directly. BNB converts automatically to USDT. Other pool assets require operator conversion.",
+                        form.chain === "base" ? "ETH 税收自动兑换为 Base USDC；其他底池资产需先由运营方兑换，再计入付款批次。" : "USDT 税收直接结算，BNB 自动兑换为 USDT；其他底池资产需先由运营方兑换。",
                       )
                     : t(
                         "Binance Pay settles from the BSC USDT pool.",
@@ -1719,11 +1738,12 @@ function LaunchFormView() {
                     <button
                       type="button"
                       className="button"
-                      onClick={() => selectPool(BSC_USDT)}
+                      disabled={!quotes.some(q => q.address.toLowerCase() === stableAddress.toLowerCase())}
+                      onClick={() => selectPool(stableAddress)}
                     >
                       {t(
-                        "Use USDT for this beneficiary",
-                        "为此受益人使用 USDT",
+                        `Use ${stableSymbol} for this beneficiary`,
+                        `为此受益人使用 ${stableSymbol}`,
                       )}
                     </button>
                     <button
@@ -1733,8 +1753,8 @@ function LaunchFormView() {
                       onClick={() => changeRoute("wallet")}
                     >
                       {t(
-                        `Keep ${quoteLabel} and choose a BSC wallet`,
-                        `保留 ${quoteLabel} 并改用 BSC 钱包收款`,
+                        `Keep ${quoteLabel} and choose a ${chainLabel} wallet`,
+                        `保留 ${quoteLabel} 并改用 ${chainLabel} 钱包收款`,
                       )}
                     </button>
                   </>
@@ -1749,7 +1769,7 @@ function LaunchFormView() {
                   {selectedQuote
                     ? `${selectedQuote.symbol} · ${selectedQuote.name}`
                     : form.quote === ZeroAddress
-                      ? "BNB · BNB"
+                      ? `${network.symbol} · ${network.symbol}`
                       : t(
                           "Asset not in the current directory",
                           "资产不在当前目录中",
@@ -1758,8 +1778,8 @@ function LaunchFormView() {
                 {form.quote === ZeroAddress ? (
                   <span>
                     {t(
-                      "Native BNB · no token contract",
-                      "原生 BNB · 无代币合约",
+                      `Native ${network.symbol} · no token contract`,
+                      `原生 ${network.symbol} · 无代币合约`,
                     )}
                   </span>
                 ) : (
@@ -1788,7 +1808,7 @@ function LaunchFormView() {
                 />
               </label>
             </div>
-            {form.chain === "bsc" && (
+            {["bsc", "base"].includes(form.chain) && (
               <>
                 <label>
                   {t("Tax duration (days)", "税收持续天数")}
@@ -1813,7 +1833,7 @@ function LaunchFormView() {
                 )}
               </small>
             </label>
-            {form.chain === "bsc" &&
+            {["bsc", "base"].includes(form.chain) &&
               Number(form.buyTax) === 0 &&
               Number(form.sellTax) === 0 && (
                 <p className="note">

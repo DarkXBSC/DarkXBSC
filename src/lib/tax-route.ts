@@ -1,5 +1,6 @@
 import { ZeroAddress, getAddress, isAddress } from "ethers";
 export const GIFT_FACTORY = "0xFb7ccc4Fd09Da5b7016A18d51e227Af4ABE53f44";
+export const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 export const BSC_USDT = "0x55d398326f99059fF775485246999027B3197955";
 export type TaxRoute =
   | "commission"
@@ -12,6 +13,7 @@ export function payBeneficiary(
   binding: { address: string; asset: string; chainId: number; rail: string },
   quote: string,
   rail: "binance-pay" | "xmoney-tax" = "binance-pay",
+  chainId = 56,
 ) {
   if (
     !isAddress(quote) ||
@@ -19,7 +21,7 @@ export function payBeneficiary(
     (rail === "binance-pay" &&
       quote.toLowerCase() !== BSC_USDT.toLowerCase()) ||
     binding.asset.toLowerCase() !== quote.toLowerCase() ||
-    binding.chainId !== 56 ||
+    binding.chainId !== chainId ||
     binding.rail !== rail ||
     !isAddress(binding.address) ||
     binding.address === ZeroAddress
@@ -47,7 +49,7 @@ export type RecipientCheck = {
   ticket?: string;
   profile?: string;
   post?: string;
-  quote?: { inputUSDT: string; minimumUSDC: string };
+  quote?: { inputUSDT: string; minimumUSDC: string; inputSymbol?: string; chainId?: number };
 };
 export async function checkRecipient(
   input: string,
@@ -55,6 +57,7 @@ export async function checkRecipient(
   nomination?: string,
   disclosure?: BeneficiaryDisclosure,
   beneficiaryKey?: string,
+  chainId = 56,
 ): Promise<RecipientCheck> {
   try {
     const r = await fetch(
@@ -64,10 +67,10 @@ export async function checkRecipient(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
           nomination && route === "x"
-            ? { nomination, disclosure, beneficiaryKey }
+            ? { nomination, disclosure, beneficiaryKey, chainId }
             : {
                 recipient: input.trim(),
-                ...(route === "x" ? { disclosure, beneficiaryKey } : {}),
+                ...(route === "x" ? { disclosure, beneficiaryKey, chainId } : {}),
               },
         ),
         signal: AbortSignal.timeout(20000),
@@ -104,6 +107,7 @@ export async function bindXTax(
   nomination?: string,
   disclosure?: BeneficiaryDisclosure,
   beneficiaryKey?: string,
+  chainId = 56,
 ) {
   if (!ticket) throw Error("RECIPIENT_CHANGED");
   const res = await fetch("/api/giving/x/bind", {
@@ -117,6 +121,7 @@ export async function bindXTax(
       confirmed: true,
       disclosure,
       beneficiaryKey,
+      chainId,
     }),
     signal: AbortSignal.timeout(20000),
   });
@@ -128,5 +133,5 @@ export async function bindXTax(
     binding.token.toLowerCase() !== predicted.toLowerCase()
   )
     throw Error("RECIPIENT_CHANGED");
-  return payBeneficiary(binding, quote, "xmoney-tax");
+  return payBeneficiary(binding, quote, "xmoney-tax", chainId);
 }

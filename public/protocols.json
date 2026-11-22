@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-11-18",
+  "checkedAt": "2026-11-22",
   "flap": {
     "portal": "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0",
     "vaultPortal": "0x90497450f2a706f1951b5bdda52B4E5d16f34C06",
@@ -14,5 +14,22 @@
     "launchAndBuy": "0xe33E9E479dF8802cb0866d5d05258bEc4cF62948",
     "version": "V2",
     "docs": "https://docs.ponsfamily.com/v2"
+  },
+  "flapChains": {
+    "bsc": {
+      "portal": "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0",
+      "vaultPortal": "0x90497450f2a706f1951b5bdda52B4E5d16f34C06",
+      "taxImplementation": "0x024f18294970B5c76c0691b87f138A0317156422",
+      "standardImplementation": "0x88881b6f03090462a969eC7f48385744Eeb63333",
+      "agentRegistry": "0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F",
+      "docs": "https://docs.flap.sh/en/flap/v2/developers",
+      "standardVersion": 7
+    },
+    "base": {
+      "portal": "0x0000BC1c4fD15Dd79029AF8F5d77D68ae4490000",
+      "vaultPortal": "0x00003877386745d059d92fa39159595BdaBF0000",
+      "taxImplementation": "0x777782e7EbB89802E2379E5fFcF7336538f43333",
+      "docs": "https://docs.flap.sh/en/flap/v2/developers/deployed-contract-addresses"
+    }
   }
 }

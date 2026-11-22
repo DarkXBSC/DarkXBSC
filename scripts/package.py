@@ -5,7 +5,7 @@ root=Path(__file__).resolve().parents[1]
 paths=[]
 for name in ['src','contracts','scripts','test','public']:
     paths.extend(p for p in (root/name).rglob('*') if p.is_file() and p.suffix not in ['.zip','.pyc'] and '__pycache__' not in p.parts)
-for name in ['README.md','PRODUCT.md','DESIGN.md','LICENSE','package.json','package-lock.json','skills-lock.json','index.html','vite.config.ts','tsconfig.json','.env.example','.gitignore','.impeccable/design.json','docs/user-guide.md','docs/operations.md','docs/hire-agent.md','docs/x-pay-paths.md','docs/private-giving.md','docs/panels-direction.md','docs/agent-pay-direction.md','docs/agent-pay-technical.md','docs/motion-spec.md','docs/direction.md','docs/architecture.md','docs/provenance.md','docs/verification.md','docs/logo-prompt.txt','deployments/inspection.json','deployments/verification.json']:
+for name in ['README.md','PRODUCT.md','DESIGN.md','LICENSE','package.json','package-lock.json','skills-lock.json','index.html','vite.config.ts','tsconfig.json','.env.example','.gitignore','.impeccable/design.json','docs/dual-chain.md','docs/user-guide.md','docs/operations.md','docs/hire-agent.md','docs/x-pay-paths.md','docs/private-giving.md','docs/panels-direction.md','docs/agent-pay-direction.md','docs/agent-pay-technical.md','docs/motion-spec.md','docs/direction.md','docs/architecture.md','docs/provenance.md','docs/verification.md','docs/logo-prompt.txt','deployments/inspection.json','deployments/verification.json']:
     p=root/name
     if p.is_file(): paths.append(p)
 paths.extend(sorted((root/'deploy/systemd').glob('*.service')))

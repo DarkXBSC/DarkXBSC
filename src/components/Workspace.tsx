@@ -116,7 +116,7 @@ export default function Workspace({ children }: { children: ReactNode }) {
         <div className="bags-utilities">
           <button
             className="bags-circle"
-            aria-label={t("Search BSC markets", "搜索 BSC 市场")}
+            aria-label={t("Search BSC and Base markets", "搜索 BSC 和 Base 市场")}
             onClick={() => {
               setQuery("");
               search.current?.showModal();
@@ -127,8 +127,8 @@ export default function Workspace({ children }: { children: ReactNode }) {
           {trade && (
             <button
               className="bags-network"
-              aria-label={t("BSC network and tools", "BSC 网络和工具")}
-              title={t("BSC network and tools", "BSC 网络和工具")}
+              aria-label={t("Networks and tools", "网络和工具")}
+              title={t("Networks and tools", "网络和工具")}
               aria-haspopup="dialog"
               aria-controls="desk-tools-dialog"
               onClick={() => menu.current?.showModal()}
@@ -169,7 +169,7 @@ export default function Workspace({ children }: { children: ReactNode }) {
         {children}
       </main>
       <footer className="bags-footer">
-        <span className="foot-name">Dark · BNB Smart Chain</span>
+        <span className="foot-name">Dark · BSC + Base</span>
         <div className="foot-links">
           <Link to="/about">{t("About", "关于")}</Link>
           <Link to="/app/contracts">{t("Contracts", "合约与源码")}</Link>
@@ -213,7 +213,7 @@ export default function Workspace({ children }: { children: ReactNode }) {
             e.preventDefault();
             if (query.trim()) {
               search.current?.close();
-              navigate("/app/explore?q=" + encodeURIComponent(query.trim()));
+              navigate("/app/explore?chain=" + (new URLSearchParams(location.search).get("chain") === "base" ? "base" : "bsc") + "&q=" + encodeURIComponent(query.trim()));
             }
           }}
         >
@@ -252,7 +252,7 @@ export default function Workspace({ children }: { children: ReactNode }) {
         }}
       >
         <div className="dialog-heading">
-          <h2 id="desk-tools-title">{t("BSC tools", "BSC 工具")}</h2>
+          <h2 id="desk-tools-title">{t("Network tools", "网络工具")}</h2>
           <button
             className="bags-circle"
             aria-label={t("Close", "关闭")}

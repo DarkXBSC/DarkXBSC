@@ -427,6 +427,8 @@ const errors: Record<string, [string, string]> = {
     "No lock was found on this network. Check the network and ID.",
     "此网络未找到锁定记录，请核对网络与编号。",
   ],
+  UNSUPPORTED_LAUNCH_CHAIN: ["Choose BSC or Base for this launch.", "请选择 BSC 或 Base 发行。"],
+  ROUTE_BSC_ONLY: ["This tax route currently supports BSC. Base supports X giving and wallet recipients.", "此税收渠道目前支持 BSC。Base 支持 X 公益和钱包收款。"],
   QUOTE_DISABLED: [
     "This pool asset is disabled onchain. Choose another asset.",
     "该底池资产已在链上停用，请更换资产。",
@@ -436,8 +438,8 @@ const errors: Record<string, [string, string]> = {
     "X Money 税收结算尚未启用。",
   ],
   X_POOL_UNAVAILABLE: [
-    "This asset is unavailable in the current Flap BSC directory.",
-    "当前 Flap BSC 目录中无法核验此资产。",
+    "This asset is unavailable in the selected network’s Flap directory.",
+    "当前所选网络的 Flap 目录中无法核验此资产。",
   ],
   X_POOL_CONVERSION_UNAVAILABLE: [
     "Pool conversion is currently unavailable.",

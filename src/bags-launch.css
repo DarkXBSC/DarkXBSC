@@ -776,3 +776,11 @@
 .bags-launch .issue-verified-recipient a {
   text-decoration: underline;
 }
+
+.issue-networks > button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 7px; background: transparent; color: inherit; cursor: pointer; font: inherit; }
+.issue-networks > button[aria-pressed="true"] { border-color: #53b67a; background: #53b67a18; }
+.base-mark { width: 15px; height: 15px; border-radius: 50%; background: #3977ff; display: inline-block; }
+
+.issue-networks > button .base-mark { display: inline-block; width: 15px; height: 15px; min-width: 15px; padding: 0; background: #3977ff; border-radius: 50%; }
+.bags-launch .issue-preflight label.issue-publication-consent { display: flex; flex-direction: row; align-items: flex-start; gap: 10px; }
+.bags-launch .issue-preflight label.issue-publication-consent input { width: auto; flex: 0 0 auto; }

@@ -147,7 +147,7 @@ export function createGasSponsor({
       !p ||
       routeTx.from !== address ||
       routeTx.chainId !== BigInt(chain) ||
-      (routeTx.value !== 0n && !(chain === 56 && authorizedNative(idx, raw)))
+      (routeTx.value !== 0n && !authorizedNative(idx, raw, chain))
     )
       throw Error("X_GAS_REVIEW");
     await resume(chain, idx);
@@ -158,7 +158,7 @@ export function createGasSponsor({
       .get(chain, signer.address).n;
     const needed = await cost(p, routeTx);
     if (needed <= 0n || needed > limits[chain]) throw Error("X_GAS_PRICE_HIGH");
-    const reserved = chain === 56 ? reservedNative(idx) : 0n;
+    const reserved = reservedNative(idx, chain);
     const totalBalance = await p.getBalance(address);
     if (totalBalance < reserved || routeTx.value > reserved)
       throw Error("X_CONVERSION_REVIEW");

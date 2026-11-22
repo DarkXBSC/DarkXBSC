@@ -11,6 +11,7 @@ import { conversionBook } from "./x-tax-conversions.mjs";
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
+    chain: { type: "string", default: "bsc" },
     token: { type: "string" },
     amount: { type: "string" },
     "min-usdt": { type: "string" },
@@ -22,10 +23,12 @@ const { values, positionals } = parseArgs({
 });
 if (values.help) {
   console.log(
-    "x:convert -- list | dex | inventory | retry\ndex / inventory: --token <launch-address> --amount <pool units> --min-usdt <USDT> [--commit --id <unique-id>]\ninventory: also --deposit <finalized USDT transfer hash from deployment wallet>\nretry: --id <request-id> --commit (operator release with a finalized failed receipt)",
+    "x:convert -- list | dex | inventory | retry\ndex / inventory: --token <launch-address> --amount <pool units> --chain <bsc|base> --min-usdt <stablecoin units: BSC USDT / Base USDC> [--commit --id <unique-id>]\ninventory: also --deposit <finalized USDT transfer hash from deployment wallet>\nretry: --id <request-id> --commit (operator release with a finalized failed receipt)",
   );
   process.exit(0);
 }
+if (!["bsc", "base"].includes(values.chain)) throw Error("UNSUPPORTED_LAUNCH_CHAIN");
+const chainId = values.chain === "base" ? 8453 : 56;
 const production = process.env.DARK_OPERATOR_LEDGER === "production";
 if (
   !production &&
@@ -50,8 +53,8 @@ const book = conversionBook(db),
 const p = new JsonRpcProvider(
   "http://127.0.0.1:" +
     Number(process.env.DARK_API_PORT || 5207) +
-    "/api/rpc/bsc",
-  56,
+    "/api/rpc/" + values.chain,
+  chainId,
   { staticNetwork: true, batchMaxCount: 1 },
 );
 try {
@@ -61,7 +64,7 @@ try {
   if (method === "list") {
     const routes = db
       .prepare(
-        "SELECT r.idx,r.token,r.address FROM routes r JOIN poolRevenue a ON r.idx=a.route",
+        "SELECT r.idx,r.token,r.address,r.chain FROM routes r JOIN poolRevenue a ON r.idx=a.route",
       )
       .all();
     console.log(
@@ -99,7 +102,7 @@ try {
         "SELECT * FROM conversions WHERE requestId=? AND kind='operator' AND stage='signed'",
       )
       .get(values.id || "");
-    if (!values.commit || !j || !j.raw || keccak256(j.raw) !== j.hash)
+    if (!values.commit || !j || !j.raw || keccak256(j.raw) !== j.hash || db.prepare("SELECT chain FROM routes WHERE idx=?").get(j.route)?.chain !== chainId)
       throw Error("INVALID_RETRY");
     const rc = await p.getTransactionReceipt(j.hash),
       head = await p.getBlock("finalized");

@@ -11,7 +11,7 @@ import {
 } from "ethers";
 import { AudioLines, ArrowRight, RefreshCw, Wallet } from "lucide-react";
 import { useApp } from "../lib/context";
-import { abi, Contract, erc20, rpc, units, errorCode } from "../lib/chain";
+import { abi, chainInfo, flapFor, Contract, erc20, rpc, units, errorCode } from "../lib/chain";
 import { GIFT_FACTORY } from "../lib/tax-route";
 import { CopyText } from "../components/Frame";
 
@@ -55,7 +55,10 @@ type Flow = {
 export default function Impact() {
   const app = useApp(),
     { config, account, t } = app,
-    [params] = useSearchParams();
+    [params, setParams] = useSearchParams();
+  const chain = params.get("chain") === "base" ? "base" : "bsc";
+  const chainLabel = chain === "base" ? "Base" : "BSC";
+  const stableSymbol = chain === "base" ? "USDC" : "USDT";
   const { hash } = useLocation();
   const panel =
     params.get("view") === "nominations"
@@ -95,7 +98,7 @@ export default function Impact() {
     setTx(linkedTx);
     reset();
     if (config && isAddress(linkedToken)) void inspect(linkedToken, linkedTx);
-  }, [config, panel, linkedToken, linkedTx]);
+  }, [config, panel, linkedToken, linkedTx, chain]);
   function reset() {
     seq.current++;
     setView(null);
@@ -113,11 +116,11 @@ export default function Impact() {
     try {
       const token = getAddress(target.trim());
       if (!config || token === ZeroAddress) throw Error();
-      const p = rpc("bsc"),
+      const p = rpc(chain),
         block = await p.getBlockNumber(),
         at = { blockTag: block };
       const portal = new Contract(
-        config.protocols.flap.vaultPortal,
+        flapFor(config, chain).vaultPortal,
         await abi("IVaultPortal"),
         p,
       );
@@ -239,7 +242,7 @@ export default function Impact() {
             receipt.status !== 1 ||
             (await receipt.confirmations()) < 2 ||
             transaction.to?.toLowerCase() !==
-              config.protocols.flap.portal.toLowerCase()
+              flapFor(config, chain).portal.toLowerCase()
           )
             throw Error();
           const iface = new Interface(await abi("IPortal")),
@@ -249,7 +252,7 @@ export default function Impact() {
             !receipt.logs.some((l) => {
               if (
                 l.address.toLowerCase() !==
-                config.protocols.flap.portal.toLowerCase()
+                flapFor(config, chain).portal.toLowerCase()
               )
                 return false;
               try {
@@ -267,12 +270,12 @@ export default function Impact() {
           collection = decoded.args[0].beneficiary;
         }
         const xResult = await fetch(
-          "/api/giving/x/status?address=" + collection,
+          "/api/giving/x/status?chainId=" + chainInfo[chain].id + "&address=" + collection,
         );
         if (xResult.ok) {
           const x = await xResult.json();
           if (
-            x.rail !== "xmoney-tax" ||
+            x.rail !== "xmoney-tax" || x.chainId !== chainInfo[chain].id ||
             (hashInput.trim() &&
               (getAddress(x.address) !== getAddress(collection) ||
                 getAddress(x.token) !== token))
@@ -318,8 +321,8 @@ export default function Impact() {
       if (n === seq.current)
         setError(
           t(
-            "Could not verify this BSC route. Check the address, creation hash and RPC connection.",
-            "无法核验这条 BSC 路径。请检查地址、创建哈希及 RPC 连接。",
+            `Could not verify this ${chainLabel} route. Check the address, creation hash and RPC connection.`,
+            `无法核验这条 ${chainLabel} 路径。请检查地址、创建哈希及 RPC 连接。`,
           ),
         );
     } finally {
@@ -366,7 +369,7 @@ export default function Impact() {
     <>
       {panel === "home" && (
         <section className="bags-giving-home">
-          <p className="giving-kinds">BSC · Flap · X Money</p>
+          <p className="giving-kinds">BSC + Base · Flap · X Money</p>
           <h1>
             <span>{t("TRACK YOUR", "追踪交易税")}</span>
             <span>{t("TRADING FEE", "公益付款")}</span>
@@ -419,8 +422,8 @@ export default function Impact() {
                   <h3>X Money</h3>
                   <p>
                     {t(
-                      "Choose an X Money recipient at launch. Dark converts pool fees to BSC USDT and uses the confirmed proceeds for USD payouts through Peer.",
-                      "发行时指定已开通 X Money 的受益人。底池税收先归集为 BSC USDT，跨链后由 Peer 买家支付美元。",
+                      "Choose a private X beneficiary on BSC or Base. BNB taxes convert to USDT and bridge to Base; ETH taxes convert locally to USDC. Peer matches the USD payer.",
+                      "在 BSC 或 Base 发行时指定私密 X 受益人。BNB 税收兑换 USDT 后跨链，ETH 税收在 Base 兑换 USDC，再由 Peer 匹配美元付款人。",
                     )}
                   </p>
                   <Link to="/app/launch?route=x">
@@ -511,6 +514,7 @@ export default function Impact() {
                   void inspect();
                 }}
               >
+                <label>{t("Network", "网络")}<select value={chain} onChange={e => { reset(); const next = new URLSearchParams(params); next.set("chain", e.target.value); next.delete("token"); next.delete("tx"); setInput(""); setTx(""); setParams(next); }}><option value="bsc">BSC</option><option value="base">Base</option></select></label>
                 <label>
                   {t("Flap token or collection address", "Flap 代币或归集地址")}
                   <input
@@ -567,7 +571,7 @@ export default function Impact() {
                                   "未找到可核验的分配路径",
                                 )}
                   </h3>
-                  <p>BSC · #{view.block}</p>
+                  <p>{chainLabel} · #{view.block}</p>
                   <CopyText value={view.address} />
                   {view.kind === "xmoney" && (
                     <>
@@ -596,7 +600,7 @@ export default function Impact() {
                         {view.conversion
                           ? t("Confirmed conversion proceeds", "已核验兑换所得")
                           : t("Confirmed Flap tax", "已确认 Flap 税收")}{" "}
-                        {view.received} USDT
+                        {view.received} {stableSymbol}
                       </p>
                       {view.conversion && (
                         <div>
@@ -614,7 +618,7 @@ export default function Impact() {
                             view.conversion.last.hash && (
                               <a
                                 href={
-                                  "https://bscscan.com/tx/" +
+                                  chainInfo[chain].explorer + "/tx/" +
                                   view.conversion.last.hash
                                 }
                                 target="_blank"
@@ -626,13 +630,13 @@ export default function Impact() {
                           {view.conversion.last?.deposit && (
                             <a
                               href={
-                                "https://bscscan.com/tx/" +
+                                chainInfo[chain].explorer + "/tx/" +
                                 view.conversion.last.deposit
                               }
                               target="_blank"
                               rel="noreferrer"
                             >
-                              {t(" USDT transfer receipt", " USDT 到账回执")}
+                              {t(` ${stableSymbol} transfer receipt`, ` ${stableSymbol} 到账回执`)}
                             </a>
                           )}
                         </div>
@@ -777,7 +781,7 @@ export default function Impact() {
                       </p>
                       <a
                         className="button"
-                        href={"https://bscscan.com/address/" + view.address}
+                        href={chainInfo[chain].explorer + "/address/" + view.address}
                         target="_blank"
                         rel="noreferrer"
                       >
@@ -789,7 +793,7 @@ export default function Impact() {
                     <>
                       <p>
                         {t("Confirmed collections", "已确认归集")}{" "}
-                        {view.received} USDT
+                        {view.received} {stableSymbol}
                       </p>
                       <p>
                         {t("Successful Binance payouts", "币安已确认付款")}{" "}
@@ -859,7 +863,7 @@ export default function Impact() {
               )}
               {release && (
                 <a
-                  href={"https://bscscan.com/tx/" + release}
+                  href={chainInfo[chain].explorer + "/tx/" + release}
                   target="_blank"
                   rel="noreferrer"
                 >

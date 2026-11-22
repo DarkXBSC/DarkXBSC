@@ -11,6 +11,7 @@ import {
   zeroPadValue,
 } from "ethers";
 import { BSC_USDT } from "./binance-giving.mjs";
+import { launchChain } from "./launch-chains.mjs";
 import { prepareRouteGas } from "./x-tax-gas.mjs";
 
 export const WBNB = getAddress("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c");
@@ -64,13 +65,14 @@ export async function sourceRevenue(
   fromBlock,
   toBlock,
   assetBlock = toBlock,
+  cfg = launchChain(56),
 ) {
   const token = await new Contract(
     processor,
     ["function getQuoteToken() view returns(address)"],
     p,
   ).getQuoteToken({ blockTag: assetBlock });
-  if (!eq(token, asset === ZeroAddress ? WBNB : asset))
+  if (!eq(token, asset === ZeroAddress ? cfg.wrapped : asset))
     throw Error("X_POOL_MISMATCH");
   if (asset !== ZeroAddress) {
     const logs = await p.getLogs({
@@ -96,15 +98,15 @@ export async function sourceRevenue(
     return eq(e.wallet, r.address) ? sum + e.amount : sum;
   }, 0n);
 }
-export async function marketQuote(p, asset, amount) {
-  const start = asset === ZeroAddress ? WBNB : asset;
+export async function marketQuote(p, asset, amount, cfg = launchChain(56)) {
+  const start = asset === ZeroAddress ? cfg.wrapped : asset;
   const paths = [
-    [start, BSC_USDT],
-    ...[WBNB, USDC]
+    [start, cfg.stable],
+    ...[cfg.wrapped, ...cfg.intermediates]
       .filter((mid) => !eq(start, mid))
-      .map((mid) => [start, mid, BSC_USDT]),
+      .map((mid) => [start, mid, cfg.stable]),
   ];
-  const c = new Contract(ROUTER, router, p);
+  const c = new Contract(cfg.router, router, p);
   const options = await Promise.all(
     paths.map(async (path) => {
       try {
@@ -160,7 +162,7 @@ export function conversionBook(db) {
           ? "awaiting-conversion"
           : "collecting",
       last: last
-        ? { ...last, actual: last.actual ? formatUnits(last.actual, 18) : null }
+        ? { ...last, actual: last.actual ? formatUnits(last.actual, launchChain(db.prepare("SELECT chain FROM routes WHERE idx=?").get(idx)?.chain).decimals) : null }
         : null,
     };
   }
@@ -179,15 +181,16 @@ export function conversionBook(db) {
     commit = false,
     requestId,
   }) {
-    if ((await p.getNetwork()).chainId !== 56n) throw Error("X_CHAIN_MISMATCH");
+    const chainId = Number((await p.getNetwork()).chainId);
+    const cfg = launchChain(chainId);
     const r = db
-      .prepare("SELECT idx,address,token FROM routes WHERE token=?")
-      .get(getAddress(token));
+      .prepare("SELECT idx,address,token,chain FROM routes WHERE token=? AND chain=?")
+      .get(getAddress(token), chainId);
     const a = r && assetOf(r.idx);
     if (!a) throw Error("UNKNOWN_CONVERSION_ROUTE");
     operator = getAddress(operator);
     const input = qty(amount, a.decimals),
-      floor = qty(minUSDT, 18),
+      floor = qty(minUSDT, cfg.decimals),
       kind = deposit ? "operator" : "dex";
     if (commit && !/^[A-Za-z0-9_-]{1,80}$/.test(requestId || ""))
       throw Error("REQUEST_ID_REQUIRED");
@@ -224,22 +227,22 @@ export function conversionBook(db) {
         rc.blockNumber > head.number ||
         rc.blockNumber <= a.startBlock ||
         !eq(rc.from, operator) ||
-        !eq(tx.to, BSC_USDT) ||
+        !eq(tx.to, cfg.stable) ||
         !eq(tx.from, operator)
       )
         throw Error("INVALID_DEPOSIT");
       const args = erc.decodeFunctionData("transfer", tx.data);
-      out = sumTransfers(rc.logs, BSC_USDT, operator, r.address);
+      out = sumTransfers(rc.logs, cfg.stable, operator, r.address);
       if (!eq(args[0], r.address) || args[1] !== floor || out !== floor)
         throw Error("INVALID_DEPOSIT");
     } else {
-      ({ path, out } = await marketQuote(p, a.asset, input));
+      ({ path, out } = await marketQuote(p, a.asset, input, cfg));
       if (out < floor) throw Error("X_CONVERSION_PRICE");
       pair = await new Contract(
-        FACTORY,
+        cfg.factory,
         ["function getPair(address,address) view returns(address)"],
         p,
-      ).getPair(path.at(-2), BSC_USDT);
+      ).getPair(path.at(-2), cfg.stable);
       if (pair === ZeroAddress) throw Error("X_NO_DEX_QUOTE");
     }
     const info = {
@@ -247,7 +250,7 @@ export function conversionBook(db) {
       collection: r.address,
       asset: a.symbol,
       amount,
-      usdt: formatUnits(out, 18),
+      usdt: formatUnits(out, cfg.decimals),
       minUSDT,
       kind,
       operator,
@@ -256,6 +259,7 @@ export function conversionBook(db) {
     db.exec("BEGIN IMMEDIATE");
     try {
       const fresh = assetOf(r.idx);
+      if (chainId === 8453 && db.prepare("SELECT 1 FROM batches WHERE route=? AND stage!='paid'").get(r.idx)) throw Error("X_SETTLEMENT_PENDING");
       if (input > BigInt(fresh.earned) - BigInt(fresh.spent) || active(r.idx))
         throw Error("INSUFFICIENT_UNRESERVED_TAX");
       const saved = db
@@ -281,9 +285,33 @@ export function conversionBook(db) {
       throw e;
     }
   }
-  return { assetOf, register, active, inventory, reserve, order };
+  async function autoNative({ p, r, minimum, cap }) {
+    const a = assetOf(r.idx);
+    if (!a || a.asset !== ZeroAddress || active(r.idx)) return;
+    const available = BigInt(a.earned) - BigInt(a.spent);
+    if (available <= 0n) return;
+    const cfg = launchChain(r.chain);
+    const price = await nativeStablePrice(p, cfg);
+    // Convert at most one batch plus 2% slippage allowance. Gas is funded
+    // separately, so no recorded charity income is used for transaction fees.
+    const target = (cap * 10000n + 9799n) / 9800n;
+    const budgetInput = (target * 10n ** 18n + price - 1n) / price;
+    const input = available < budgetInput ? available : budgetInput;
+    const reference = input * price / 10n ** 18n;
+    if (reference * 98n / 100n < minimum) return;
+    const quote = await marketQuote(p, a.asset, input, cfg);
+    if (quote.out * 100n < reference * 98n || quote.out * 100n > reference * 102n)
+      throw Error("X_CONVERSION_PRICE");
+    const floor = reference * 98n / 100n;
+    const previous = db.prepare("SELECT id,stage,deadline FROM conversions WHERE route=? ORDER BY id DESC LIMIT 1").get(r.idx);
+    const now = (await p.getBlock("finalized")).timestamp;
+    if (previous && ["expired", "reverted"].includes(previous.stage) && now < previous.deadline + 1800) return;
+    await order({p, token: r.token, amount: formatUnits(input, 18), minUSDT: formatUnits(floor, cfg.decimals), operator: r.address, commit: true, requestId: `auto-${r.chain}-${r.idx}-${previous?.id || 0}`});
+  }
+  return { assetOf, register, active, inventory, reserve, order, autoNative };
 }
 export async function processConversion({ db, book, r, p, wallet, sponsor }) {
+  const cfg = launchChain(r.chain);
   const j = book.active(r.idx);
   if (!j) return false;
   const a = book.assetOf(r.idx),
@@ -314,18 +342,18 @@ export async function processConversion({ db, book, r, p, wallet, sponsor }) {
       const path = JSON.parse(j.path);
       const limit = native
         ? 0n
-        : await new Contract(a.asset, erc, p).allowance(r.address, ROUTER);
+        : await new Contract(a.asset, erc, p).allowance(r.address, cfg.router);
       if (!native && limit !== input) {
         action = limit === 0n ? "approve" : "reset";
         tx = {
           to: a.asset,
           data: erc.encodeFunctionData("approve", [
-            ROUTER,
+            cfg.router,
             limit === 0n ? input : 0n,
           ]),
         };
       } else {
-        const amounts = await new Contract(ROUTER, router, p).getAmountsOut(
+        const amounts = await new Contract(cfg.router, router, p).getAmountsOut(
           input,
           path,
         );
@@ -333,7 +361,7 @@ export async function processConversion({ db, book, r, p, wallet, sponsor }) {
         action = "swap";
         tx = native
           ? {
-              to: ROUTER,
+              to: cfg.router,
               value: input,
               data: router.encodeFunctionData("swapExactETHForTokens", [
                 floor,
@@ -343,7 +371,7 @@ export async function processConversion({ db, book, r, p, wallet, sponsor }) {
               ]),
             }
           : {
-              to: ROUTER,
+              to: cfg.router,
               data: router.encodeFunctionData("swapExactTokensForTokens", [
                 input,
                 floor,
@@ -355,18 +383,18 @@ export async function processConversion({ db, book, r, p, wallet, sponsor }) {
       }
     }
     const signed = await wallet.signTransaction(
-      await prepareRouteGas(p, 56, r.address, tx),
+      await prepareRouteGas(p, cfg.id, r.address, tx),
     );
     db.prepare(
-      "UPDATE conversions SET raw=?,hash=?,action=?,stage='signed' WHERE id=? AND stage='queued' AND NOT EXISTS(SELECT 1 FROM batches WHERE route=? AND stage IN ('source-deposit','bridge'))",
-    ).run(signed, keccak256(signed), action, j.id, r.idx);
+      "UPDATE conversions SET raw=?,hash=?,action=?,stage='signed' WHERE id=? AND stage='queued' AND NOT EXISTS(SELECT 1 FROM batches WHERE route=? AND (stage IN ('source-deposit','bridge') OR (?=8453 AND stage!='paid')))",
+    ).run(signed, keccak256(signed), action, j.id, r.idx, cfg.id);
     return true;
   }
   const tx = Transaction.from(j.raw);
   if (
     keccak256(j.raw) !== j.hash ||
     !eq(tx.from, r.address) ||
-    tx.chainId !== 56n
+    tx.chainId !== BigInt(cfg.id)
   )
     throw Error("X_CONVERSION_REVIEW");
   const rc = await p.getTransactionReceipt(j.hash);
@@ -378,7 +406,7 @@ export async function processConversion({ db, book, r, p, wallet, sponsor }) {
       finish("expired");
       return true;
     }
-    await sponsor.ensure(56, r.idx, j.raw);
+    await sponsor.ensure(cfg.id, r.idx, j.raw);
     await p.broadcastTransaction(j.raw);
     return true;
   }
@@ -395,7 +423,7 @@ export async function processConversion({ db, book, r, p, wallet, sponsor }) {
   if (j.action === "approve" || j.action === "reset") {
     const allowance = await new Contract(a.asset, erc, p).allowance(
       r.address,
-      ROUTER,
+      cfg.router,
       { blockTag: rc.blockNumber },
     );
     if (allowance !== (j.action === "approve" ? input : 0n))
@@ -407,8 +435,8 @@ export async function processConversion({ db, book, r, p, wallet, sponsor }) {
   }
   let actual = floor;
   if (j.kind === "dex") {
-    actual = sumTransfers(rc.logs, BSC_USDT, j.pair, r.address);
-    if (actual < floor || !eq(tx.to, ROUTER))
+    actual = sumTransfers(rc.logs, cfg.stable, j.pair, r.address);
+    if (actual < floor || !eq(tx.to, cfg.router))
       throw Error("X_CONVERSION_REVIEW");
   } else if (
     native
@@ -445,4 +473,25 @@ export async function processConversion({ db, book, r, p, wallet, sponsor }) {
     throw e;
   }
   return true;
+}
+
+// Chainlink spot reference with freshness and L2 sequencer checks. Native-only
+// automatic orders stop on stale feeds, a depeg, insufficient liquidity or >2%
+// deviation. Other pool assets retain the explicit operator conversion workflow.
+export async function nativeStablePrice(p, cfg) {
+  const head = await p.getBlock("latest");
+  const feedAbi = ["function latestRoundData() view returns(uint80,int256,uint256,uint256,uint80)", "function decimals() view returns(uint8)"];
+  if (cfg.sequencer) {
+    const [, answer, startedAt] = await new Contract(cfg.sequencer, feedAbi, p).latestRoundData();
+    if (answer !== 0n || startedAt <= 0n || BigInt(head.timestamp) - startedAt <= 3600n) throw Error("X_ORACLE_UNAVAILABLE");
+  }
+  async function price(address, maxAge) {
+    const c = new Contract(address, feedAbi, p);
+    const [[round, answer,, updated, answered], d] = await Promise.all([c.latestRoundData(), c.decimals()]);
+    if (answer <= 0n || updated <= 0n || updated > BigInt(head.timestamp) || BigInt(head.timestamp) - updated > BigInt(maxAge) || answered < round || d > 18n) throw Error("X_ORACLE_UNAVAILABLE");
+    return answer * 10n ** (18n - d);
+  }
+  const [native, stable] = await Promise.all([price(cfg.nativeUsdFeed, 4200), price(cfg.stableUsdFeed, 90000)]);
+  if (stable < 98n * 10n ** 16n || stable > 102n * 10n ** 16n) throw Error("X_ORACLE_UNAVAILABLE");
+  return native * 10n ** BigInt(cfg.decimals) / stable;
 }

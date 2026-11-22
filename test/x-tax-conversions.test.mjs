@@ -12,6 +12,7 @@ import {
   keccak256,
   AbiCoder,
 } from "ethers";
+import { launchChain } from "../scripts/launch-chains.mjs";
 import { BSC_USDT } from "../scripts/binance-giving.mjs";
 import {
   conversionBook,
@@ -82,13 +83,15 @@ test("pool accounting isolates successful native Flap distributions, ignores unr
     /X_POOL_MISMATCH/,
   );
 });
+for (const chainId of [56, 8453])
 for (const kind of ["dex", "operator"])
   for (const native of [true, false]) {
-    test(`${kind} ${native ? "BNB" : "6-decimal pool"}: exact funding, restart across lost broadcast, realized USDT once`, async (t) => {
+    test(`${chainId} ${kind} ${native ? "BNB" : "6-decimal pool"}: exact funding, restart across lost broadcast, realized USDT once`, async (t) => {
+      const cfg = launchChain(chainId), u = v => parseUnits(v, cfg.decimals);
       const db = new DatabaseSync(":memory:");
       t.after(() => db.close());
       db.exec(
-        "CREATE TABLE routes(idx INTEGER PRIMARY KEY,address TEXT,token TEXT,received TEXT); CREATE TABLE batches(route INTEGER,stage TEXT)",
+        "CREATE TABLE routes(idx INTEGER PRIMARY KEY,address TEXT,token TEXT,received TEXT,chain INTEGER NOT NULL DEFAULT 56); CREATE TABLE batches(route INTEGER,stage TEXT)",
       );
       const wallet = Wallet.createRandom(),
         token = Wallet.createRandom().address,
@@ -101,8 +104,9 @@ for (const kind of ["dex", "operator"])
         deposit = id("prefund"),
         settled = u("25.2");
       let book = conversionBook(db);
-      const r = { idx: 0, address: wallet.address, token };
-      db.prepare("INSERT INTO routes VALUES(0,?,?,'0')").run(r.address, token);
+      const r = { idx: 0, chain: chainId, address: wallet.address, token };
+      db.prepare("INSERT INTO routes(idx,address,token,received) VALUES(0,?,?,'0')").run(r.address, token);
+      db.prepare("UPDATE routes SET chain=?").run(chainId);
       book.register(
         0,
         { address: asset, symbol: native ? "BNB" : "POOL", decimals },
@@ -119,12 +123,12 @@ for (const kind of ["dex", "operator"])
       const funding = () => ({
         status: 1,
         from: source,
-        to: BSC_USDT,
+        to: cfg.stable,
         blockNumber: 20,
-        logs: [event(BSC_USDT, source, r.address, floor)],
+        logs: [event(cfg.stable, source, r.address, floor)],
       });
       const p = {
-        getNetwork: async () => ({ chainId: 56n }),
+        getNetwork: async () => ({ chainId: BigInt(chainId) }),
         getBlock: async () => ({ number: height, timestamp: 10000 }),
         getTransactionCount: async () => nonce,
         getFeeData: async () => ({ gasPrice: 1n }),
@@ -146,7 +150,7 @@ for (const kind of ["dex", "operator"])
           h === deposit
             ? {
                 from: source,
-                to: BSC_USDT,
+                to: cfg.stable,
                 data: erc.encodeFunctionData("transfer", [r.address, floor]),
               }
             : seen === h
@@ -179,7 +183,7 @@ for (const kind of ["dex", "operator"])
           wallet,
           sponsor: {
             ensure: async (chain, idx, raw) => {
-              assert.equal(chain, 56);
+              assert.equal(chain, chainId);
               assert.equal(book.active(idx).raw, raw);
             },
           },
@@ -217,7 +221,7 @@ for (const kind of ["dex", "operator"])
             native ? tx.to : erc.decodeFunctionData("transfer", tx.data)[0],
             operator,
           );
-        if (j.action === "swap") assert.equal(tx.to, ROUTER);
+        if (j.action === "swap") assert.equal(tx.to, cfg.router);
         rc = {
           hash: j.hash,
           status: 1,
@@ -227,8 +231,8 @@ for (const kind of ["dex", "operator"])
           logs:
             j.action === "swap"
               ? [
-                  event(BSC_USDT, pair, r.address, settled),
-                  event(BSC_USDT, operator, r.address, u("500")),
+                  event(cfg.stable, pair, r.address, settled),
+                  event(cfg.stable, operator, r.address, u("500")),
                 ]
               : j.action === "release" && !native
                 ? [event(asset, r.address, operator, input)]

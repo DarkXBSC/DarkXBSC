@@ -1,3 +1,4 @@
+import { launchChain } from "./launch-chains.mjs";
 import { launchMetadata } from "./launch-disclosure.mjs";
 import { hireAPI } from "./hire-api.mjs";
 import http from "node:http";
@@ -45,6 +46,7 @@ const env = Object.fromEntries(
         "X_TAX_BSC_RPC_URL",
         "X_TAX_MAX_USDT",
         "X_TAX_ENABLE",
+        "X_TAX_AUTO_NATIVE",
         "X_TAX_GAS_SPONSOR",
         "X_TAX_GAS_LIMIT_BNB",
         "X_TAX_GAS_LIMIT_ETH",
@@ -253,6 +255,8 @@ const server = http.createServer(async (req, res) => {
           xCheck: xGiving.canCheck === true,
           xIdentityProvider: xGiving.identityProvider,
           xMin: xGiving.minimum,
+          chains: [56, 8453],
+          xAutoNative: env.X_TAX_AUTO_NATIVE === "yes" && sponsorEnabled && sponsorAvailable(),
         });
       if (
         u.pathname === "/api/giving/nominations" ||
@@ -318,7 +322,7 @@ const server = http.createServer(async (req, res) => {
             const address = u.searchParams.get("address");
             if (!/^0x[a-f0-9]{40}$/i.test(address ?? ""))
               return json(res, 422, { error: "INVALID_ADDRESS" });
-            const result = xGiving.status(address);
+            const result = xGiving.status(address, Number(u.searchParams.get("chainId") || 56));
             return json(
               res,
               result ? 200 : 404,
@@ -338,6 +342,7 @@ const server = http.createServer(async (req, res) => {
               input.nomination,
               input.disclosure,
               input.beneficiaryKey,
+              input.chainId,
             );
             if (!settlementActive()) {
               result.state = "VERIFIED";
@@ -351,6 +356,7 @@ const server = http.createServer(async (req, res) => {
         } catch (e) {
           return json(res, 422, {
             error: [
+              "UNSUPPORTED_LAUNCH_CHAIN",
               "NOMINATION_NOT_FOUND",
               "INVALID_DISCLOSURE",
               "PRIVATE_NOMINATION_REQUIRED",
@@ -509,10 +515,11 @@ const server = http.createServer(async (req, res) => {
     ) {
       try {
         const data = u.pathname.endsWith("/board")
-          ? await gmgn.board()
+          ? await gmgn.board(u.searchParams.get("chain") || "bsc")
           : await gmgn.candles(
               u.searchParams.get("address"),
               u.searchParams.get("period"),
+              u.searchParams.get("chain") || "bsc",
             );
         return json(res, 200, data);
       } catch (e) {
@@ -535,7 +542,7 @@ const server = http.createServer(async (req, res) => {
         return json(
           res,
           200,
-          await marketReader(u.searchParams.get("query") || "flap"),
+          await marketReader(u.searchParams.get("query") || "flap", u.searchParams.get("chain") || "bsc"),
         );
       } catch {
         return json(res, 502, { error: "MARKET_UNAVAILABLE" });
@@ -611,7 +618,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === "GET" && u.pathname.startsWith("/api/quote-logo/")) {
       const match = u.pathname.match(
-        /^\/api\/quote-logo\/(56|4663)\/(0x[\da-fA-F]{40})$/,
+        /^\/api\/quote-logo\/(56|4663|8453)\/(0x[\da-fA-F]{40})$/,
       );
       if (!match) return json(res, 400, { error: "INVALID_ASSET" });
       if (!quotesCache || Date.now() - quotesCache.at > 60000)
@@ -671,13 +678,16 @@ const server = http.createServer(async (req, res) => {
       if (mining) return json(res, 429, { error: "SALT_MINING_BUSY" });
       const b = JSON.parse((await body(req, 2000)).toString());
       const taxed = b.taxed !== false;
+      let network;
+      try { network = launchChain(b.chainId ?? 56); } catch { return json(res, 422, {error:"UNSUPPORTED_LAUNCH_CHAIN"}); }
+      if (!taxed && !network.standardImplementation) return json(res, 422, {error:"ZERO_TAX_UNAVAILABLE"});
       mining = true;
       const worker = new Worker(new URL("./mine-salt.mjs", import.meta.url), {
         workerData: {
           implementation: taxed
-            ? protocol.flap.taxImplementation
-            : protocol.flap.standardImplementation,
-          portal: protocol.flap.portal,
+            ? network.taxImplementation
+            : network.standardImplementation,
+          portal: network.portal,
           suffix: taxed ? "7777" : "8888",
         },
       });
@@ -831,6 +841,7 @@ const server = http.createServer(async (req, res) => {
         endpoints.add(
           env.X_TAX_BSC_RPC_URL || "https://bsc-rpc.publicnode.com",
         );
+      if (chain === "base") endpoints.add("https://base-rpc.publicnode.com");
       for (const endpoint of endpoints) {
         try {
           const r = await fetch(endpoint, {

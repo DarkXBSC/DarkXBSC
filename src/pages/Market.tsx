@@ -25,7 +25,7 @@ const usd = (v: number | string | null | undefined) =>
         maximumSignificantDigits: 4,
       }).format(Number(v));
 const same = (a: Asset, b: Asset) =>
-  a.address.toLowerCase() === b.address.toLowerCase();
+  (a.chain || "bsc") === (b.chain || "bsc") && a.address.toLowerCase() === b.address.toLowerCase();
 function saved(): Asset[] {
   try {
     const list = JSON.parse(localStorage.getItem("dark:watchlist") || "[]");
@@ -159,10 +159,12 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
   const { t } = useApp(),
     location = useLocation(),
     [params, setParams] = useSearchParams();
+  const chain = params.get("chain") === "base" ? "base" : "bsc";
+  const chainLabel = chain === "base" ? "Base" : "BSC";
   const query = params.get("q")?.trim() || "";
   const token = params.get("token")?.toLowerCase() || "";
   const byVolume = params.get("sort") === "volume";
-  const { board, status: boardStatus, reload } = useMarketBoard(true);
+  const { board, status: boardStatus, reload } = useMarketBoard(true, chain);
   const [result, setResult] = useState<{ rows: Asset[]; checkedAt: string }>({
     rows: [],
     checkedAt: "",
@@ -178,7 +180,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
     const abort = new AbortController();
     setSearchStatus("loading");
     setResult({ rows: [], checkedAt: "" });
-    fetch("/api/market?query=" + encodeURIComponent(query), {
+    fetch("/api/market?query=" + encodeURIComponent(query) + "&chain=" + chain, {
       signal: abort.signal,
     })
       .then(async (r) => {
@@ -193,7 +195,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
         if (!abort.signal.aborted) setSearchStatus("error");
       });
     return () => abort.abort();
-  }, [query, revision]);
+  }, [query, revision, chain]);
   function inspect(r: Asset) {
     setSelected(r);
     dialog.current?.showModal();
@@ -206,7 +208,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
     if (openedToken.current === token || !/^0x[\da-f]{40}$/.test(token)) return;
     const carried = location.state?.tickerAsset as Asset | undefined;
     const snapshot =
-      carried?.address.toLowerCase() === token
+      (carried?.chain || "bsc") === chain && carried?.address.toLowerCase() === token
         ? carried
         : Object.values(board.groups)
             .flat()
@@ -218,7 +220,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
     }
     if (boardStatus === "loading") return;
     const abort = new AbortController();
-    fetch("/api/market?query=" + token, { signal: abort.signal })
+    fetch("/api/market?query=" + token + "&chain=" + chain, { signal: abort.signal })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (abort.signal.aborted) return;
@@ -232,7 +234,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
       })
       .catch(() => {});
     return () => abort.abort();
-  }, [token, location.state, board.groups, boardStatus]);
+  }, [token, location.state, board.groups, boardStatus, chain]);
   function closeChart() {
     setSelected(null);
     if (token) {
@@ -255,7 +257,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
   const status = query ? searchStatus : boardStatus;
   const liveRows = Object.values(board.groups).flat();
   const groups: Record<string, Asset[]> = watchlist
-    ? { saved: watch.map((w) => liveRows.find((r) => same(r, w)) || w) }
+    ? { saved: watch.filter(w => (w.chain || "bsc") === chain).map((w) => liveRows.find((r) => same(r, w)) || w) }
     : query
       ? { results: result.rows }
       : board.groups;
@@ -278,6 +280,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
   const refresh = () => (query ? setRevision((r) => r + 1) : reload());
   return (
     <div className="bags-trade">
+      <div className="issue-networks" role="group" aria-label={t("Market network", "市场网络")}>{(["bsc", "base"] as const).map(c => <button type="button" key={c} aria-pressed={chain === c} onClick={() => { const next = new URLSearchParams(params); next.set("chain", c); next.delete("token"); openedToken.current = ""; setSelected(null); dialog.current?.close(); setParams(next); }}>{c === "bsc" ? "BSC" : "Base"}</button>)}</div>
       <TickerStrip
         rows={board.groups.bonded || board.groups.results || []}
         onInspect={inspect}
@@ -337,8 +340,8 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
       {source === "DEX Screener" && !query && !watchlist && (
         <p className="trade-note">
           {t(
-            "GMGN stages unavailable. Showing BSC Flap search results from DEX Screener.",
-            "GMGN 阶段行情暂不可用，当前显示 DEX Screener 的 BSC Flap 搜索结果。",
+            `GMGN stages unavailable. Showing ${chainLabel} Flap search results from DEX Screener.`,
+            `GMGN 阶段行情暂不可用，当前显示 DEX Screener 的 ${chainLabel} Flap 搜索结果。`,
           )}
         </p>
       )}
@@ -357,7 +360,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
       )}
       {waiting && (
         <span className="trade-sr" role="status">
-          {t("Reading BSC markets…", "正在读取 BSC 行情…")}
+          {t(`Reading ${chainLabel} markets…`, `正在读取 ${chainLabel} 行情…`)}
         </span>
       )}
       <div
@@ -421,8 +424,8 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
       </div>
       <div className="trade-source board-foot">
         <span>
-          {source || "BSC"}
-          {source ? " · BSC" : ""}
+          {source || chainLabel}
+          {source ? " · " + chainLabel : ""}
           {timestamp && " · " + new Date(timestamp).toLocaleTimeString()}
           {source === "GMGN" &&
             liveRows.some((r) => r.change != null) &&
@@ -469,7 +472,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
                 <TokenArt asset={selected} />
                 <div>
                   <h2 id="bags-chart-title">{selected.symbol}</h2>
-                  <span>{selected.name} · BSC</span>
+                  <span>{selected.name} · {chainLabel}</span>
                 </div>
               </div>
               <div className="board-actions">
@@ -504,7 +507,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
                 </div>
               }
             >
-              <CandleChart address={selected.address} />
+              <CandleChart chain={chain} address={selected.address} />
             </Suspense>
             <dl className="token-metrics">
               {[

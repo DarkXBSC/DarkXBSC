@@ -48,7 +48,7 @@ export function normalizeCandles(raw) {
   }
   return [...keyed.values()].sort((a, b) => a.time - b.time).slice(-180);
 }
-export function normalizeBoard(raw) {
+export function normalizeBoard(raw, chain = "bsc") {
   const groups = {};
   for (const [stage, list] of Object.entries({
     new: raw?.new_creation,
@@ -61,7 +61,7 @@ export function normalizeBoard(raw) {
       .filter((r) => {
         const key = String(r?.address).toLowerCase();
         if (
-          r?.chain !== "bsc" ||
+          r?.chain !== chain ||
           r?.launchpad_platform !== "flap" ||
           !validAddress.test(key) ||
           seen.has(key)
@@ -72,6 +72,7 @@ export function normalizeBoard(raw) {
       })
       .slice(0, 30)
       .map((r) => ({
+        chain,
         address: r.address.toLowerCase(),
         name: String(r.name || "").slice(0, 100),
         symbol: String(r.symbol || "").slice(0, 40),
@@ -98,7 +99,7 @@ export function normalizeBoard(raw) {
           /^UklGR[A-Za-z0-9+/]+=*$/.test(r.logo_small_base64)
             ? "data:image/webp;base64," + r.logo_small_base64
             : "",
-        url: "https://gmgn.ai/bsc/token/" + r.address,
+        url: "https://gmgn.ai/" + chain + "/token/" + r.address,
       }));
   }
   return groups;
@@ -107,7 +108,9 @@ export function createGmgnMarket(apiKey) {
   const cache = new Map(),
     active = new Map();
   let blockedUntil = 0;
-  async function cached(key, args, decode, ttl) {
+  async function cached(key, args, decode, ttl, chain = "bsc") {
+    if (!["bsc", "base"].includes(chain)) throw Error("INVALID_CHART");
+    key = chain + ":" + key;
     const old = cache.get(key);
     if (old && old.until > Date.now()) return old.value;
     if (!apiKey) throw Error("GMGN_NOT_CONFIGURED");
@@ -118,7 +121,7 @@ export function createGmgnMarket(apiKey) {
       try {
         const { stdout } = await exec(
           process.execPath,
-          [cli, "market", ...args, "--chain", "bsc", "--raw"],
+          [cli, "market", ...args, "--chain", chain, "--raw"],
           {
             cwd: tmpdir(),
             env: {
@@ -133,7 +136,7 @@ export function createGmgnMarket(apiKey) {
         const value = {
           ...decode(JSON.parse(stdout)),
           source: "GMGN",
-          chainId: 56,
+          chainId: chain === "base" ? 8453 : 56,
           checkedAt: new Date().toISOString(),
         };
         if (cache.size >= 128) cache.delete(cache.keys().next().value);
@@ -153,14 +156,14 @@ export function createGmgnMarket(apiKey) {
     return run;
   }
   return {
-    board: () =>
+    board: (chain = "bsc") =>
       cached(
         "board",
         ["trenches", "--launchpad-platform", "flap", "--limit", "30"],
-        (raw) => ({ groups: normalizeBoard(raw) }),
-        45000,
+        (raw) => ({ groups: normalizeBoard(raw, chain) }),
+        45000, chain,
       ),
-    candles: (address, period) => {
+    candles: (address, period, chain = "bsc") => {
       if (!validAddress.test(address) || !Object.hasOwn(spans, period))
         throw Error("INVALID_CHART");
       const to = Math.floor(Date.now() / 1000);
@@ -178,7 +181,7 @@ export function createGmgnMarket(apiKey) {
           String(to),
         ],
         (raw) => ({ address, period, candles: normalizeCandles(raw) }),
-        20000,
+        20000, chain,
       );
     },
   };

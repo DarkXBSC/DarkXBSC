@@ -62,7 +62,7 @@ export default function Welcome() {
         <dl>
           <div>
             <dt>{t("Launch network", "发行网络")}</dt>
-            <dd>BSC</dd>
+            <dd>BSC + Base</dd>
           </div>
           <div>
             <dt>{t("Launchpad", "发行平台")}</dt>

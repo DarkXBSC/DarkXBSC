@@ -9,7 +9,10 @@ import {
   isAddress,
   ZeroAddress,
 } from "ethers";
-export type Chain = "bsc" | "robinhood";
+export type Chain = "bsc" | "base" | "robinhood";
+export type LaunchChain = "bsc" | "base";
+export type FlapProtocol = { portal: string; vaultPortal: string; taxImplementation: string; standardImplementation?: string; agentRegistry?: string };
+export function flapFor(config: Config, chain: LaunchChain) { return config.protocols.flapChains[chain]; }
 export type Deployment = {
   name: string;
   address: string;
@@ -41,6 +44,7 @@ export type Config = {
     }
   >;
   protocols: {
+    flapChains: Record<LaunchChain, FlapProtocol>;
     flap: {
       portal: string;
       vaultPortal: string;
@@ -52,6 +56,7 @@ export type Config = {
   };
 };
 export const chainInfo = {
+  base: { id: 8453, name: "Base", symbol: "ETH", explorer: "https://basescan.org" },
   bsc: {
     id: 56,
     name: "BNB Smart Chain",

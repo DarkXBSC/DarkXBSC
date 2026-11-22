@@ -5,6 +5,11 @@ import { Link } from "react-router-dom";
 import { useApp } from "../lib/context";
 import { PageTitle } from "../components/Frame";
 const chapters = [
+  { id: "dual-chain", en: "Launch on BSC or Base", cn: "BSC 与 Base 双链发行", to: "/app/launch", steps: [
+    ["Choose BSC or Base, then complete the same three steps: Meme details, tax & privacy, and review & launch.", "选择 BSC 或 Base，完成相同三步：Meme 资料、税收与隐私、确认发行。"],
+    ["Private beneficiaries are the default. Base ETH tax converts to Base USDC; BSC BNB converts to USDT and bridges to Base. Native conversions use price guards. Other pool assets need operator conversion.", "受益人默认保密。Base 的 ETH 税收兑换为 Base USDC；BSC 的 BNB 税收兑换 USDT 后跨链。原生币自动兑换有价格保护，其他底池资产需运营方兑换。"],
+    ["The default batch is 25 stablecoin units. Track the correct network in Giving. Only verified USD receipts count as paid; a bridge or escrow deposit alone does not.", "默认每批 25 单位稳定币。在公益页面选择对应网络追踪。仅核验过的美元回执计为已付，跨链或托管入金本身不算付款完成。"],
+  ] },
   {
     id: "agent-portfolios",
     en: "Build an Agent ID portfolio",
@@ -72,8 +77,8 @@ const chapters = [
     to: "/app/impact",
     steps: [
       [
-        "In Launch, choose who receives the trading tax. Your wallet reviews the BSC contract call before sending.",
-        "在发行页选择税收受益人，发送前由钱包核对 BSC 合约调用。",
+        "In Launch, choose who receives the trading tax. Your wallet reviews the selected network’s contract call before sending.",
+        "在发行页选择税收受益人，发送前由钱包核对所选网络的合约调用。",
       ],
       [
         "Choose X Money giving, confirm the recipient can receive money, and verify their handle. Flap sends the selected asset to a dedicated address. Dark converts non-USDT tax before payout. Track verified USD payments in Giving.",

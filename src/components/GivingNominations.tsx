@@ -9,7 +9,7 @@ type Nomination = {
   title: string;
   reason: string;
   owner: string;
-  receipts: { token: string; paidCents: string; stage: string }[];
+  receipts: { chainId?: number; token: string; paidCents: string; stage: string }[];
 };
 const base = "/api/giving/nominations";
 async function post(path: string, data: unknown) {
@@ -152,9 +152,9 @@ export default function GivingNominations() {
             </p>
           ) : (
             n.receipts.map((r) => (
-              <p key={r.token}>
-                <Link to={"/app/impact?view=track&token=" + r.token}>
-                  {short(r.token)}
+              <p key={(r.chainId || 56) + ":" + r.token}>
+                <Link to={"/app/impact?view=track&chain=" + (r.chainId === 8453 ? "base" : "bsc") + "&token=" + r.token}>
+                  {r.chainId === 8453 ? "Base" : "BSC"} · {short(r.token)}
                 </Link>{" "}
                 ·{" "}
                 {BigInt(r.paidCents) > 0n
