@@ -344,8 +344,8 @@ const errors: Record<string, [string, string]> = {
     "Flap 未能保存图片，请重试上传；尚未发行代币。",
   ],
   METADATA_UNAVAILABLE: [
-    "The image was uploaded, but its metadata is not ready. Click Refresh pinned metadata.",
-    "图片已上传，但资料尚未可读，请点击重新读取已上传资料。",
+    "The image was uploaded, but its metadata is not ready. Retry Publish & check launch to read it again.",
+    "图片已上传，但资料暂时无法读取。请再次点击“公开资料并检查发行”，重新读取已上传资料。",
   ],
   METADATA_IMAGE_MISSING: [
     "The metadata does not contain a valid image. Recheck the uploaded file.",

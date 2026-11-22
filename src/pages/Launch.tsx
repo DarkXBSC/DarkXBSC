@@ -498,6 +498,7 @@ function LaunchFormView() {
     if (!config || !account) return setMessage("CONNECT_WALLET");
     if (!publishConsent) return;
     operation.current = true;
+    setMessage("");
     setWorking("PREPARING");
     try {
       if (!identityReady || !selectedQuote) throw Error("INVALID_TOKEN_NAME");

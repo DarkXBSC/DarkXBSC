@@ -1,5 +1,6 @@
 import { launchChain } from "./launch-chains.mjs";
 import { launchMetadata } from "./launch-disclosure.mjs";
+import { publicUrl } from "../src/lib/public-url.mjs";
 import { hireAPI } from "./hire-api.mjs";
 import http from "node:http";
 import https from "node:https";
@@ -610,11 +611,9 @@ const server = http.createServer(async (req, res) => {
         !/^(Qm[1-9A-HJ-NP-Za-km-z]{44}|bafy[a-z2-7]+|bafk[a-z2-7]+)$/.test(cid)
       )
         return json(res, 400, { error: "INVALID_CID" });
-      return json(
-        res,
-        200,
-        await publicJSON("https://flap.mypinata.cloud/ipfs/" + cid),
-      );
+      const metadata = await publicJSON("https://flap.mypinata.cloud/ipfs/" + cid);
+      // Keep already-open clients working when Flap returns a bare image CID.
+      return json(res, 200, { ...metadata, image: publicUrl(metadata.image) });
     }
     if (req.method === "GET" && u.pathname.startsWith("/api/quote-logo/")) {
       const match = u.pathname.match(

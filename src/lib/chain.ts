@@ -132,19 +132,7 @@ export function units(s: string, decimals: number) {
     throw Error("INVALID_AMOUNT");
   }
 }
-export function publicUrl(value: string) {
-  if (value.startsWith("ipfs://"))
-    return (
-      "https://flap.mypinata.cloud/ipfs/" +
-      value.slice(7).replace(/^ipfs\//, "")
-    );
-  try {
-    const u = new URL(value);
-    return u.protocol === "https:" ? u.href : "";
-  } catch {
-    return "";
-  }
-}
+export { publicUrl } from "./public-url.mjs";
 export function short(value: string) {
   return value.length > 18 ? value.slice(0, 8) + "…" + value.slice(-6) : value;
 }

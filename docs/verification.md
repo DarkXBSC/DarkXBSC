@@ -105,3 +105,9 @@ Agent Pay 独立界面复审将唯一修正 F1 判为 resolved，结论 ship；�
 生产 Peer Cash SDK 显示支持 xmoney/USD，25 USDC 的只读估算为 25 USD。Relay 签名前报价在未配置 API Key 时被拒绝。尚未取得实际受益人、开通运营密钥或授权任何真实交易。BSC 发行、跨链与 X Money 实付未广播。此前对旧 Gift Vault 的验收仅属于历史记录。
 
 BSC 默认发行节点本次未返回有效的 USDT 日志响应。X 税收结算现使用独立可配置的 BSC 日志节点，已在 BSC PublicNode 实查 finalized 区块和 USDT Transfer 日志。
+
+## 2026-11-22 · 发行图片 CID 兼容修复
+
+通过生产上传接口实际上传公开 Dark 图片，复现 Flap metadata 的 `image` 返回裸 IPFS CID，旧页面因只识别 HTTPS/IPFS URI 而报 `METADATA_IMAGE_MISSING`。网关实际返回 HTTP 200 和 PNG；故障是地址解析，不是用户图片损坏。前后端现在共用地址规范化函数，兼容裸 CID、IPFS URI 与 HTTPS，拒绝缺失、非字符串、危险协议及越界 IPFS 路径。API 同时兼容未刷新的旧页面，不更改已固定的链上 metadata CID。
+
+7 项针对图片解析和受益人隐私的回归测试通过，生产构建通过。桌面浏览器在旧版线上页面复现报错后，仅替换 metadata API 为修复版本，再次点击便进入发行确认页，未重复上传。新上传路径和旧 CID 恢复路径分别通过 BSC / Base 实际主网只读模拟、图片解码与钱包提交入口测试；隔离测试钱包在发送请求时明确拒绝，确认取消后可恢复。没有广播交易、发行测试币或支付 Gas。
