@@ -5,6 +5,12 @@ import { Link } from "react-router-dom";
 import { useApp } from "../lib/context";
 import { PageTitle } from "../components/Frame";
 const chapters = [
+  { id: "railgun", en: "Shield funds on BSC", cn: "在 BSC 存入 RAILGUN", to: "/app/railgun", steps: [
+    ["In a compatible RAILGUN wallet, copy the recipient’s BSC or universal 0zk address and confirm it with them.", "从兼容钱包复制 BSC 或通用 0zk 收款地址，与收款人核对完整地址。"],
+    ["Open RAILGUN under More tools. Connect your BSC wallet, enter the asset and amount, and review the protocol fee. Leave BNB for gas.", "在更多工具打开 RAILGUN，连接 BSC 钱包，填写资产、金额和收款地址，核对协议费并预留 BNB 支付 Gas。"],
+    ["Approve the requested token amount if prompted, then confirm the deposit. Native BNB wraps and shields in one transaction.", "按提示授权本次代币金额，然后确认存入。原生 BNB 通过一笔交易包装并存入。"],
+    ["Find the public receipt in Activity. The recipient syncs the private balance and checks spendability in their RAILGUN wallet. The X Money tax payout has its own receipts.", "在交易记录中查看公开回执。收款人在 RAILGUN 钱包同步隐私余额、查看可用状态。X Money 税收公益另有付款回执。"],
+  ] },
   { id: "pons", en: "Launch on Robinhood Chain", cn: "在 Robinhood Chain 发行", to: "/app/launch", steps: [
     ["Select Robinhood and add the token name, symbol and image.", "选择 Robinhood，填写代币名称、代码并上传图片。"],
     ["Choose a wallet or X Money giving. For giving, enter the X username and creator tax. After the Pons sweep, Dark claims ETH and bridges each batch to Base USDC for payout.", "选择钱包收款或 X Money 公益。公益模式填写 X 用户名与创建者税率。Pons 完成归集后，Dark 自动领取 ETH，逐批跨链至 Base USDC 并发起付款。"],
@@ -314,7 +320,7 @@ export default function Learn() {
         </nav>
         <article key={selected}>
           <h2>{t(chapter.en, chapter.cn)}</h2>
-          {!["giving", "xpay", "pons", "dual-chain"].includes(selected) && (
+          {!["railgun", "giving", "xpay", "pons", "dual-chain"].includes(selected) && (
             <FlowDiagram
               kind={
                 selected as "launch" | "otc" | "agent" | "inventory" | "reserve"

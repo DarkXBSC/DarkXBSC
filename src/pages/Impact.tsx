@@ -410,6 +410,7 @@ export default function Impact() {
           <Link className="giving-secondary" to="/app/impact?view=nominations">
             {t("Community nominations", "社区公益提名")}
           </Link>
+          <Link className="giving-secondary" to="/app/railgun">{t("Shield funds on BSC", "BSC 隐私存入")}</Link>
           <p className="giving-privacy">
             {t(
               "Onchain tax receipts · Verified payout records",

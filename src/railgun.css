@@ -1,0 +1,106 @@
+.rail-desk {
+  max-width: 1060px;
+  margin: 46px auto 64px;
+  padding: 0 30px;
+}
+.rail-desk header small {
+  font: 600 12px monospace;
+  letter-spacing: 0.08em;
+}
+.rail-desk h1 {
+  font-size: clamp(48px, 5vw, 74px);
+  letter-spacing: -0.06em;
+  margin: 8px 0;
+}
+.rail-desk p {
+  line-height: 1.55;
+}
+.rail-columns {
+  display: grid;
+  grid-template-columns: minmax(410px, 1.45fr) minmax(260px, 1fr);
+  gap: 40px;
+  margin-top: 28px;
+  align-items: start;
+}
+.rail-columns form,
+.rail-columns aside {
+  border-top: 1px solid currentColor;
+  padding-top: 22px;
+}
+.rail-columns fieldset {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 16px;
+}
+.rail-columns label {
+  font-weight: 650;
+  display: grid;
+  gap: 7px;
+}
+.rail-columns label:last-child {
+  grid-column: 1/-1;
+}
+.rail-columns input,
+.rail-columns select,
+.rail-columns textarea {
+  box-sizing: border-box;
+  width: 100%;
+  font: inherit;
+  background: var(--bg);
+  color: inherit;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 10px;
+}
+.rail-columns textarea {
+  resize: vertical;
+  font-family: monospace;
+}
+.rail-columns form > .bags-action {
+  margin: 18px 0 4px;
+}
+.rail-columns button:disabled {
+  opacity: 0.55;
+}
+.rail-columns aside h2 {
+  margin: 0;
+  font-size: 24px;
+}
+.rail-columns a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.rail-columns aside details {
+  margin-top: 18px;
+}
+.rail-columns aside details div {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0;
+}
+.rail-columns .copy code {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.rail-review {
+  margin-top: 18px;
+}
+.rail-review div {
+  padding: 5px 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 15px;
+}
+.rail-review dd {
+  margin: 0;
+  font: 13px monospace;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.rail-desk .rail-columns aside p { margin: 12px 0; font-size: 14px; line-height: 1.65; }
+.rail-desk header p { font-size: 15px; }

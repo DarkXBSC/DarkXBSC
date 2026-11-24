@@ -1,6 +1,8 @@
 import { ArrowRight, Check, Download, RefreshCw } from "lucide-react";
 import { PageTitle, CopyText, OfficialTokenNotice } from "../components/Frame";
 import { useApp } from "../lib/context";
+import { railgunNetwork } from "../lib/railgun-config.mjs";
+const rail = railgunNetwork("bsc");
 const descriptions: Record<string, [string, string]> = {
   registry: [
     "Creator-authored project identities and cross-chain links. Owner attestations are explicit.",
@@ -67,6 +69,11 @@ export default function Contracts() {
             </div>)}
           </article>}
         </div>
+      </section>
+      <section className="issue-card">
+        <h2>RAILGUN · BSC</h2>
+        <p>{t("Third-party protocol used for shield deposits.", "隐私存入使用的第三方协议合约。")}</p>
+        {[[rail.proxy, "Smart Wallet"], [rail.relay, "RelayAdapt"]].map(([address, name]) => <div key={address}><b>{name}</b> <CopyText value={address} /> <a href={"https://bscscan.com/address/" + address + "#code"} target="_blank" rel="noreferrer">{t("Contract source", "查看合约源码")}</a></div>)}
       </section>
       <div className="directory-toolbar">
         <h2>{t("BSC protocol contracts", "BSC 协议合约")}</h2>

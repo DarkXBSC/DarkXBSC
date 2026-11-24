@@ -22,6 +22,7 @@ const Home = lazy(() => import("./pages/Home")),
   Learn = lazy(() => import("./pages/Learn")),
   Activity = lazy(() => import("./pages/Activity")),
   AgentPay = lazy(() => import("./pages/AgentPay")),
+  Railgun = lazy(() => import("./pages/Railgun")),
   Admin = lazy(() => import("./pages/Admin"));
 class Boundary extends React.Component<
   { children: React.ReactNode },
@@ -70,6 +71,7 @@ createRoot(document.getElementById("root")!).render(
                     path="/app/bridge"
                     element={<Navigate to="/app/rebalance" replace />}
                   />
+                  <Route path="/app/railgun" element={<Railgun />} />
                   <Route path="/app/otc" element={<OTC />} />
                   <Route path="/app/agent-otc" element={<OTC agent />} />
                   <Route path="/app/agent-pay" element={<AgentPay />} />

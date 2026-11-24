@@ -54,3 +54,15 @@
 - 在「行情」按发行阶段查看资产。打开某个代币可切换 K 线周期并查看成交量。搜索同名代币时，以 BSC 合约地址识别资产。[行情](https://darkwork.fun/app/explore)
 - 普通 OTC 由卖方填写出售与收款资产、数量、期限及最低到账条件，授权后签署报价，私下将报价交给买方。买方核对代币地址、金额和费用后在钱包确认链上成交。未成交时，卖方可按页面流程撤单。[普通 OTC](https://darkwork.fun/app/otc)
 - Agent OTC 在结算时检查买卖双方的币安 Agent ID。报价可以私下传递，成交交易在 BSC 可查。库存锁还需核对接收方、哈希和期限，保管好解锁秘密。[Agent OTC](https://darkwork.fun/app/agent-otc)
+
+
+## BSC 隐私存入
+
+在「更多工具」选择 [RAILGUN 隐私存入](https://darkwork.fun/app/railgun)。收款人从支持 BSC 的 RAILGUN 钱包提供通用或 BSC 专用的 `0zk` 地址。请与收款人核对完整地址，并为发送钱包预留 BNB 支付 Gas。
+
+1. 连接自己的钱包，选择 BNB、WBNB、BSC USDT 或 BSC USDC，输入金额和收款地址。
+2. 预览链上协议费和预计隐私到账数量。原生 BNB 通过 RelayAdapt 在一笔交易中包装并存入 WBNB。其他资产根据现有 allowance 提示授权。
+3. 在钱包确认存入。Dark 核对协议的 Shield 事件后展示实收数量。交易中断时，在「交易记录」按哈希核对原交易。
+4. 收款人在兼容钱包同步余额，查看 PPOI 状态、私密转账或提取。公开链记录存入者、资产和金额。Dark 仅在浏览器中处理完整收款地址。手动 Shield 回执与 Flap 税收和 X Money 付款分别记录。
+
+[协议文档](https://docs.railgun.org/developer-guide/wallet/transactions/shielding) · [兼容钱包](https://railgun.org/wallets)

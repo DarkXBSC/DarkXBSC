@@ -15,6 +15,7 @@ const navigation = [
   ["/app/learn", "Docs", "教材"],
 ] as const;
 const tools = [
+  ["/app/railgun", "RAILGUN shield", "RAILGUN 隐私存入"],
   ["/app/contracts", "Contracts & source", "合约与源码"],
   ["/app/watchlist", "Watchlist", "我的收藏"],
   ["/app/registry", "BSC registry", "BSC 登记簿"],
