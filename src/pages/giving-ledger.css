@@ -1,0 +1,62 @@
+.giving-ledger {
+  max-width: 1080px;
+  margin: 48px auto;
+  padding: 0 36px;
+}
+.giving-ledger h1 {
+  font-size: clamp(48px, 5vw, 72px);
+  letter-spacing: -0.055em;
+  margin: 10px 0;
+}
+.giving-ledger header p,
+.giving-ledger section p {
+  margin: 14px 0;
+  line-height: 1.6;
+}
+.giving-ledger form {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  margin: 28px 0;
+}
+.giving-ledger form label {
+  display: grid;
+  gap: 6px;
+  min-width: 420px;
+}
+.giving-ledger section {
+  border-top: 1px solid currentColor;
+  padding: 24px 0;
+}
+.ledger-totals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin: 24px 0;
+}
+.ledger-totals strong {
+  display: block;
+  font-size: 26px;
+  overflow-wrap: anywhere;
+}
+.giving-ledger table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.giving-ledger th,
+.giving-ledger td {
+  text-align: left;
+  padding: 10px 6px;
+  border-bottom: 1px solid #7776;
+}
+.giving-ledger a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.issue-rail-input {
+  display: grid;
+  gap: 12px;
+}
+.issue-rail-input p {
+  line-height: 1.6;
+}

@@ -43,6 +43,7 @@ import { createGasSponsor, prepareRouteGas } from "./x-tax-gas.mjs";
 import { BSC_USDT } from "./binance-giving.mjs";
 import { USDC, validatePlan } from "./peer-pay.mjs";
 
+import { railTaxBook } from "./rail-tax.mjs";
 import { createPonsBook, ponsQuote } from "./pons-giving.mjs";
 import { launchChain, taxClone, predictTaxToken, migrateRouteChains } from "./launch-chains.mjs";
 export { predictTaxToken } from "./launch-chains.mjs";
@@ -216,6 +217,7 @@ export function createXTaxGiving(env, deps = {}) {
     return root.derivePath("m/44'/60'/0'/0/" + i);
   };
   const conversions = conversionBook(db);
+  const railTax = railTaxBook({db,atomic,mac,seal,open,p:bscRpc,wallet,conversions});
   const providerFor = (chain) => Number(chain) === 4663 ? rhRpc : Number(chain) === 8453 ? baseRpc : bscRpc;
   const minimumFor = (chain) => positiveUnits(env.X_TAX_MIN_USDT || "25", configFor(chain).decimals);
   const capFor = (chain) => positiveUnits(env.X_TAX_MAX_USDT || env.X_TAX_MIN_USDT || "25", configFor(chain).decimals);
@@ -799,8 +801,7 @@ export function createXTaxGiving(env, deps = {}) {
     busy = true;
     try {
       if (
-        (await bscRpc.getNetwork()).chainId !== 56n ||
-        (await baseRpc.getNetwork()).chainId !== 8453n
+        (await bscRpc.getNetwork()).chainId !== 56n
       )
         throw Error("X_CHAIN_MISMATCH");
       const ends = new Map();
@@ -808,8 +809,15 @@ export function createXTaxGiving(env, deps = {}) {
       // waiting on the same sponsor nonce. Each route records its own issue.
       if (sponsor)
         await Promise.allSettled([sponsor.resume(56), sponsor.resume(8453), ...(ponsEnabled ? [sponsor.resume(4663)] : [])]);
-      for (const r of db.prepare("SELECT * FROM routes").all()) {
+      try { await railTax.discoverPending(); } catch (error) { deps.onError?.(error); }
+      let baseVerified = false;
+      for (const r of db.prepare("SELECT r.* FROM routes r LEFT JOIN railRoutes s ON s.route=r.idx WHERE s.route IS NULL OR s.creation IS NOT NULL").all()) {
         try {
+          const railRoute = railTax.row(r.idx);
+          if (!railRoute && !baseVerified) {
+            if ((await baseRpc.getNetwork()).chainId !== 8453n) throw Error("X_CHAIN_MISMATCH");
+            baseVerified = true;
+          }
           const sourceRpc = providerFor(r.chain);
           if (!ends.has(r.chain)) ends.set(r.chain, (await sourceRpc.getBlock("finalized")).number);
           if(r.chain===4663) {
@@ -824,6 +832,13 @@ export function createXTaxGiving(env, deps = {}) {
           const fresh = db
             .prepare("SELECT * FROM routes WHERE idx=?")
             .get(r.idx);
+          if (railRoute) {
+            if (!railTax.job(r.idx) && !conversions.active(r.idx) && railTax.available(fresh)<parseUnits("25",18) && sponsor && env.X_TAX_AUTO_NATIVE==="yes")
+              await conversions.autoNative({p:sourceRpc,r:fresh,minimum:parseUnits("25",18),cap:parseUnits("25",18)});
+            if (conversions.active(r.idx)) await processConversion({db,book:conversions,r:fresh,p:sourceRpc,wallet:wallet(r.idx),sponsor});
+            else await railTax.settle(fresh,sponsor);
+            issue(r.idx,""); continue;
+          }
           const pendingBatch = db
             .prepare(
               "SELECT stage FROM batches WHERE route=? AND stage!='paid' ORDER BY id LIMIT 1",
@@ -861,6 +876,7 @@ export function createXTaxGiving(env, deps = {}) {
           issue(
             r.idx,
             [
+              "RAIL_LAUNCH_MISMATCH", "RAIL_RECEIPT_REVIEW", "RAIL_BALANCE_REVIEW",
               "X_ORACLE_UNAVAILABLE",
               "X_NO_DEX_QUOTE",
               "X_CONVERSION_REVIEW",
@@ -891,7 +907,7 @@ export function createXTaxGiving(env, deps = {}) {
     const r = db
       .prepare("SELECT * FROM routes WHERE chain=? AND (address=? OR token=?)")
       .get(cfg.id, getAddress(address), getAddress(address));
-    if (!r) return null;
+    if (!r || railTax.row(r.idx)) return null;
     const batches = db
       .prepare("SELECT stage,cents FROM batches WHERE route=? ORDER BY id")
       .all(r.idx);
@@ -921,6 +937,7 @@ export function createXTaxGiving(env, deps = {}) {
   }
   return {
     enabled,
+    railTax,
     canCheck: true,
     ponsEnabled,
     identityProvider: useFx ? "FxEmbed" : "X API",

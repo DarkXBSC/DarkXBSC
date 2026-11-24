@@ -3,6 +3,7 @@ export const GIFT_FACTORY = "0xFb7ccc4Fd09Da5b7016A18d51e227Af4ABE53f44";
 export const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 export const BSC_USDT = "0x55d398326f99059fF775485246999027B3197955";
 export type TaxRoute =
+  | "railgun"
   | "commission"
   | "reserve"
   | "wallet"
@@ -137,4 +138,17 @@ export async function bindXTax(
   )
     throw Error("RECIPIENT_CHANGED");
   return payBeneficiary(binding, quote, "xmoney-tax", chainId);
+}
+
+export async function railTaxRequest(input: {social:string; railShare?:string; beneficiaryKey?:string; chain:string; quote:string},
+  share:number, binding?:{salt:string; ticket:string; token:string}) {
+  if(input.chain!=='bsc'||![ZeroAddress,BSC_USDT.toLowerCase()].includes(input.quote.toLowerCase()))throw Error('RAIL_POOL_UNSUPPORTED');
+  const response=await fetch('/api/giving/railgun/'+(binding?'bind':'check'),{
+    method:'POST', headers:{'Content-Type':'application/json'}, signal:AbortSignal.timeout(20000),
+    body:JSON.stringify({chainId:56, recipient:input.social.trim(), key:input.beneficiaryKey, share, quote:input.quote,
+      ...(binding?{ticket:binding.ticket,salt:binding.salt}:{})})});
+  const data=await response.json();if(!response.ok)throw Error(data.error||'RAIL_REQUEST_FAILED');
+  if(!/^[a-f0-9]{64}$/.test(data.ticket))throw Error('RECIPIENT_CHANGED');
+  if(binding && (binding.ticket!==data.ticket||data.rail!=='railgun-tax'||data.chainId!==56||getAddress(data.asset)!==getAddress(input.quote)||getAddress(data.token)!==getAddress(binding.token)||getAddress(data.address)===ZeroAddress))throw Error('RECIPIENT_CHANGED');
+  return {ticket:String(data.ticket),address:binding?getAddress(data.address):''};
 }

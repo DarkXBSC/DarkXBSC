@@ -250,6 +250,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === "GET" && u.pathname === "/api/giving/capabilities")
         return json(res, 200, {
           uid: binanceGiving.enabled,
+          railgunTax: settlementActive() && sponsorEnabled && sponsorAvailable() && env.X_TAX_AUTO_NATIVE === "yes",
           xTax: settlementActive(),
           xPoolConversion: sponsorEnabled && sponsorAvailable(),
           xGasSponsored: sponsorEnabled && sponsorAvailable(),
@@ -312,6 +313,22 @@ const server = http.createServer(async (req, res) => {
               : "NOMINATION_UNAVAILABLE",
           });
         }
+      }
+      if (u.pathname.startsWith("/api/giving/railgun/")) {
+        const book=xGiving.railTax;
+        if(!book)return json(res,503,{error:"SETTLEMENT_UNAVAILABLE"});
+        try {
+          if(req.method==="GET" && u.pathname==="/api/giving/railgun/status"){
+            const data=book.status(u.searchParams.get("address"));
+            return json(res,data?200:404,data||{error:"UNKNOWN_ROUTE"});
+          }
+          if(req.method!=="POST" || !allowedOrigins.has(req.headers.origin) || !req.headers["content-type"]?.startsWith("application/json"))return json(res,403,{error:"LOCAL_ORIGIN_REQUIRED"});
+          if(!settlementActive() || !sponsorEnabled || !sponsorAvailable() || env.X_TAX_AUTO_NATIVE!=="yes")return json(res,503,{error:"SETTLEMENT_UNAVAILABLE"});
+          const input=JSON.parse((await body(req,2000)).toString());
+          if(u.pathname==="/api/giving/railgun/check")return json(res,200,book.check(input));
+          if(u.pathname==="/api/giving/railgun/bind")return json(res,200,await book.bind(input));
+          return json(res,404,{error:"UNKNOWN_ROUTE"});
+        } catch(e){return json(res,422,{error:["INVALID_RAILGUN_ADDRESS","RAILGUN_ADDRESS_NETWORK","INVALID_SHARE","INVALID_FLAP_SALT","SALT_ALREADY_USED","RAIL_POOL_UNSUPPORTED","RECIPIENT_CHANGED"].includes(e.message)?e.message:"RAIL_REQUEST_FAILED"});}
       }
       if (u.pathname.startsWith("/api/giving/x/")) {
         if (

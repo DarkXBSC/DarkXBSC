@@ -5,6 +5,11 @@ import { Link } from "react-router-dom";
 import { useApp } from "../lib/context";
 import { PageTitle } from "../components/Frame";
 const chapters = [
+  { id:"rail-tax", en:"Fund private giving with Flap tax",cn:"用 Flap 税收做隐私公益",to:"/app/launch?route=railgun",steps:[
+    ["Select BSC and RAILGUN giving in step two. Verify the recipient’s 0zk address and choose the giving share. The remaining share goes to Flap liquidity.","第二步选择 BSC 的 RAILGUN 公益，核对 0zk 收款地址，设定净税收公益比例，其余进入 Flap 流动性。"],
+    ["Choose BNB or BSC USDT. BNB tax is converted with price guards. Dark pays settlement gas. The protocol deducts its Shield fee from each 25 USDT batch.","选择 BNB 或 BSC USDT 底池。BNB 税收经价格保护兑换，Dark 代付结算 Gas，协议费从每批 25 USDT 中扣除。"],
+    ["After launch, share the public ledger. Confirmed Shield events show the actual deposit. The recipient syncs their BSC RAILGUN wallet.","发行后可分享公开账本，按最终确认的 Shield 事件核对实收金额。受益人在自己的 BSC RAILGUN 钱包同步余额。"],
+  ]},
   { id: "railgun", en: "Shield funds on BSC", cn: "在 BSC 存入 RAILGUN", to: "/app/railgun", steps: [
     ["In a compatible RAILGUN wallet, copy the recipient’s BSC or universal 0zk address and confirm it with them.", "从兼容钱包复制 BSC 或通用 0zk 收款地址，与收款人核对完整地址。"],
     ["Open RAILGUN under More tools. Connect your BSC wallet, enter the asset and amount, and review the protocol fee. Leave BNB for gas.", "在更多工具打开 RAILGUN，连接 BSC 钱包，填写资产、金额和收款地址，核对协议费并预留 BNB 支付 Gas。"],
@@ -320,7 +325,7 @@ export default function Learn() {
         </nav>
         <article key={selected}>
           <h2>{t(chapter.en, chapter.cn)}</h2>
-          {!["railgun", "giving", "xpay", "pons", "dual-chain"].includes(selected) && (
+          {!["rail-tax", "railgun", "giving", "xpay", "pons", "dual-chain"].includes(selected) && (
             <FlowDiagram
               kind={
                 selected as "launch" | "otc" | "agent" | "inventory" | "reserve"

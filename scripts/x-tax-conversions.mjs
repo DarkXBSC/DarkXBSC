@@ -259,6 +259,9 @@ export function conversionBook(db) {
     db.exec("BEGIN IMMEDIATE");
     try {
       const fresh = assetOf(r.idx);
+      if (db.prepare("SELECT 1 FROM sqlite_master WHERE name='railBatches'").get() &&
+          db.prepare("SELECT 1 FROM railBatches WHERE route=? AND stage!='confirmed'").get(r.idx))
+        throw Error("X_SETTLEMENT_PENDING");
       if (chainId === 8453 && db.prepare("SELECT 1 FROM batches WHERE route=? AND stage!='paid'").get(r.idx)) throw Error("X_SETTLEMENT_PENDING");
       if (input > BigInt(fresh.earned) - BigInt(fresh.spent) || active(r.idx))
         throw Error("INSUFFICIENT_UNRESERVED_TAX");

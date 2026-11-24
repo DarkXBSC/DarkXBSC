@@ -78,3 +78,9 @@ curl -fsS https://darkwork.fun/api/hire/services
 ## 可公开分发的内容
 
 `npm run build` 会生成 `public/dark-genesis-source.zip`，同时将它复制到 `dist/`。发布包由明确定义的文件清单构建，仓库保留源码、测试、公开编译输入和操作教程。运行生成的 SQLite、签名日志、真实 .env、SSH 凭据和部署钱包材料由运营方单独备份。生成包可用 `unzip -l public/dark-genesis-source.zip` 检查文件清单。
+
+## BSC RAILGUN 自动公益
+
+控制端在共享 SQLite 的 `railRoutes` 登记绑定 Flap 发行参数的路线，复用现有加密存储和钱包派生序号。签名端按最终确认的官方 Portal 日志发现发行，校验税币实现、归集地址、底池和拆分参数，随后只登记该 Flap 税处理器的分发。原生收入先经过现有的报价、滑点与资产来源核验。直接向归集地址转账不会计入公益税收。
+
+每个归集地址只允许一个未完成批次。签名端在广播前持久化交易字节，服务恢复后按同一哈希查询或重播。只有最终确认的 RAILGUN Shield 事件中票据、公链资产和金额匹配，才登记实收。遇到回执冲突时保留原批次并复核。暂停服务后做一致性备份，恢复时同时保留路由库、签名凭据和原密钥；存在 RAILGUN 路线时必须使用识别该路线的版本。服务状态通过 `GET /api/giving/capabilities` 的 `railgunTax` 字段检查。公开回执通过 `GET /api/giving/railgun/status?address=0x…` 查询。

@@ -1,5 +1,5 @@
 import {
-  bindXTax,
+  bindXTax, railTaxRequest,
   payBeneficiary,
   BSC_USDT,
   type TaxRoute,
@@ -33,6 +33,7 @@ export type LaunchForm = {
   disclosure?: BeneficiaryDisclosure;
   beneficiaryKey?: string;
   nomination?: string;
+  railShare?: string;
   commissionShare?: string;
   creator: string;
   website: string;
@@ -86,7 +87,7 @@ export async function prepare(
   const buyTax = bps(form.buyTax),
     sellTax = form.chain === "robinhood" ? buyTax : bps(form.sellTax);
   if (
-    !["x", "binance", "square", "wallet", "reserve", "commission"].includes(
+    !["railgun", "x", "binance", "square", "wallet", "reserve", "commission"].includes(
       form.route,
     )
   )
@@ -96,6 +97,7 @@ export async function prepare(
     (!isAddress(form.creator) || form.creator === ZeroAddress)
   )
     throw Error("INVALID_ADDRESS");
+  if(form.route==="railgun" && form.chain!=="bsc")throw Error("ROUTE_BSC_ONLY");
   if (form.chain === "robinhood") return preparePons(form, config, account, buyTax, fingerprint(form), payTicket);
   if (!["bsc", "base"].includes(form.chain)) throw Error("UNSUPPORTED_LAUNCH_CHAIN");
   if (form.chain === "base" && !["x", "wallet"].includes(form.route)) throw Error("ROUTE_BSC_ONLY");
@@ -177,6 +179,11 @@ export async function prepare(
   if (!r.ok) throw Error("SALT_MINING_FAILED");
   const mined = await r.json();
   predicted = mined.predicted;
+  const railShare=form.route==="railgun"?bps(form.railShare||""):0;
+  if(form.route==="railgun"){
+    if(!payTicket || !railShare)throw Error("RAIL_CHECK_REQUIRED");
+    recipient=(await railTaxRequest(form,railShare,{salt:mined.salt,ticket:payTicket,token:predicted})).address;
+  }
   if (form.route === "x") {
     recipient = await bindXTax(
       form.social,
@@ -215,10 +222,10 @@ export async function prepare(
     sellTaxRate: sellTax,
     taxDuration: taxed ? Number(form.taxDays) * 86400 : 0,
     antiFarmerDuration: 0,
-    mktBps: taxed ? 10000 : 0,
+    mktBps: railShare || (taxed ? 10000 : 0),
     deflationBps: 0,
     dividendBps: 0,
-    lpBps: 0,
+    lpBps: railShare ? 10000-railShare : 0,
     minimumShareBalance: 0,
     dividendToken: form.quote,
     commissionReceiver: ZeroAddress,

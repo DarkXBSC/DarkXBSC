@@ -15,6 +15,7 @@ const navigation = [
   ["/app/learn", "Docs", "教材"],
 ] as const;
 const tools = [
+  ["/app/giving-ledger", "Public giving ledger", "公开公益账本"],
   ["/app/railgun", "RAILGUN shield", "RAILGUN 隐私存入"],
   ["/app/contracts", "Contracts & source", "合约与源码"],
   ["/app/watchlist", "Watchlist", "我的收藏"],

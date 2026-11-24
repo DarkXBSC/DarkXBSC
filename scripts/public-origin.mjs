@@ -161,7 +161,7 @@ const server = https.createServer(
         path === "/" ||
         path === "/about" ||
         path === "/admin" ||
-        /^\/app(?:\/[a-z0-9-]+)*\/?$/.test(path);
+        /^\/app(?:\/[a-z0-9-]+)*\/?$/i.test(path);
       const file = await realpath(
         resolve(root, "." + (route ? "/index.html" : path)),
       );

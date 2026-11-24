@@ -66,3 +66,11 @@
 4. 收款人在兼容钱包同步余额，查看 PPOI 状态、私密转账或提取。公开链记录存入者、资产和金额。Dark 仅在浏览器中处理完整收款地址。手动 Shield 回执与 Flap 税收和 X Money 付款分别记录。
 
 [协议文档](https://docs.railgun.org/developer-guide/wallet/transactions/shielding) · [兼容钱包](https://railgun.org/wallets)
+
+## 发行后自动将税收存入 BSC RAILGUN
+
+1. 从 [隐私公益发行](https://darkwork.fun/app/launch?route=railgun) 进入 BSC 发射台，选择 BNB 或 BSC USDT 底池，填写代币资料和图片。
+2. 在「税收与隐私」设置交易税率，选择「隐私池公益」。输入收款人兼容 BSC 的完整 `0zk` 地址，核对地址，设置净税收中用于公益的百分比。比如填 80%，Flap 就把净税收中的 80% 分给公益归集钱包，20% 分给流动性。先与收款人确认地址归属，格式校验只验证地址可用性。
+3. 核对发行参数，连接发行人钱包，模拟并签署 BSC 发行交易。发行人支付发行 Gas 和自己填写的首买金额。保留代币地址，以便从 [公开公益账本](https://darkwork.fun/app/giving-ledger) 查询或分享。
+4. Flap 分发税款后，Dark 核对链上来源。BNB 税款在可成交且满足价格保护时兑换为 BSC USDT。每累计 25 USDT，Dark 的服务器代付结算 Gas 并发起 Shield。账本分列批次金额、协议费和最终实收。收款人在自己的 RAILGUN 钱包同步余额。
+5. Dark 需要处理并加密保存收款地址，以便为后续批次生成新的加密票据。账本可公开查看归集地址、金额和交易哈希。请勿在代币图片、描述或社交链接里自行公开收款信息。

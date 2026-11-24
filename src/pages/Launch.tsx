@@ -5,7 +5,7 @@ import {
   BSC_USDT,
   BASE_USDC,
   type TaxRoute,
-  bindXTax,
+  bindXTax, railTaxRequest,
   checkRecipient,
   type RecipientCheck,
 } from "../lib/tax-route";
@@ -66,6 +66,7 @@ const blank: LaunchForm = {
   quote: ZeroAddress,
   route: "wallet",
   commissionShare: "",
+  railShare: "100",
   social: "",
   disclosure: { visibility: "private", purpose: "" },
   creator: "",
@@ -97,7 +98,7 @@ function LaunchFormView() {
   }, [nomination]);
   const requestedRoute = nomination ? "x" : search.get("route");
   const preset: TaxRoute | null =
-    requestedRoute === "commission"
+    requestedRoute === "railgun" ? "railgun" : requestedRoute === "commission"
       ? "commission"
       : requestedRoute === "square" || requestedRoute === "binance"
         ? "binance"
@@ -114,6 +115,10 @@ function LaunchFormView() {
   const [imageBusy, setImageBusy] = useState(false);
   const operation = useRef(false);
   const [payCheck, setPayCheck] = useState<RecipientCheck | null>(null);
+  const [railEnabled,setRailEnabled]=useState(false);
+  const [railChecked,setRailChecked]=useState("");
+  const [railChecking,setRailChecking]=useState(false);
+  const [railError,setRailError]=useState("");
   const [xEnabled, setXEnabled] = useState<boolean | null>(null);
   const [ponsGiving,setPonsGiving]=useState(false);
   const [xCanCheck, setXCanCheck] = useState(false);
@@ -131,6 +136,7 @@ function LaunchFormView() {
     fetch("/api/giving/capabilities")
       .then((r) => r.json())
       .then((r) => {
+        setRailEnabled(r.railgunTax===true);
         setMerchant(r.uid === true);
         setXEnabled(r.xTax === true);
         setPonsGiving(r.chains?.includes(4663) === true);
@@ -180,7 +186,7 @@ function LaunchFormView() {
             "square",
             "reserve",
             "wallet",
-            "commission",
+            "commission", "railgun",
           ].includes(draft.route)
             ? draft.route
             : draft.reserve === true
@@ -189,9 +195,9 @@ function LaunchFormView() {
         const savedQuote = isAddress(draft.quote) ? draft.quote : null;
         const defaultQuote = route === "binance" ? BSC_USDT : ZeroAddress;
         const quote =
-          preset === "binance" ? BSC_USDT : (savedQuote ?? defaultQuote);
+          preset === "binance" ? BSC_USDT : route === "railgun" && savedQuote?.toLowerCase() !== BSC_USDT.toLowerCase() ? ZeroAddress : (savedQuote ?? defaultQuote);
         const pons = draft.chain === "robinhood" && (!preset || preset === "x");
-        const chain = pons ? "robinhood" : draft.chain === "base" ? "base" : "bsc";
+        const chain = preset === "railgun" ? "bsc" : pons ? "robinhood" : draft.chain === "base" ? "base" : "bsc";
         return {
           ...initial,
           ...draft,
@@ -254,6 +260,18 @@ function LaunchFormView() {
   const protocolLabel = isPons ? "Pons V2" : "Flap V3";
   const stableAddress = form.chain === "base" ? BASE_USDC : BSC_USDT;
   const stableSymbol = form.chain === "bsc" ? "USDT" : "USDC";
+  const isRail=form.route==="railgun";
+  const railKey=JSON.stringify([form.chain,form.route,form.quote,form.railShare,form.social,form.beneficiaryKey]);
+  const railVersion=useRef(railKey);railVersion.current=railKey;
+  const railReady=isRail && railEnabled && railChecked===railKey && Boolean(payCheck?.ticket);
+  async function verifyRail(){
+    const key=railKey;setRailChecking(true);setRailError("");setRailChecked("");
+    try{
+      const result=await railTaxRequest(form,bps(form.railShare||""));
+      if(railVersion.current===key){setPayCheck({input:form.social,state:"READY",ticket:result.ticket});setRailChecked(key);}
+    }catch(e){if(railVersion.current===key)setRailError(errorCode(e));}
+    finally{setRailChecking(false);}
+  }
   const stablePool = form.route === "x" || form.route === "binance";
   const compatiblePool =
     !stablePool || (isPons && form.route === "x" && form.quote === ZeroAddress) ||
@@ -404,6 +422,7 @@ function LaunchFormView() {
     setForm((f) => ({
       ...f,
       route,
+      ...(route==="railgun" && ![ZeroAddress,BSC_USDT.toLowerCase()].includes(f.quote.toLowerCase())?{quote:ZeroAddress,firstBuy:"0"}:{}),
       social: "",
       cid: "",
       image: "",
@@ -483,6 +502,7 @@ function LaunchFormView() {
   async function upload(): Promise<LaunchForm> {
     if (!account) throw Error("CONNECT_WALLET");
     if (!file && !form.cid) throw Error("UPLOAD_IMAGE_FIRST");
+    if(isRail && /0zk1[a-z0-9]{123}/i.test([form.name,form.symbol,form.description,form.website,form.twitter,imageCaption].join(" "))) throw Error("PRIVATE_RECIPIENT_IN_PUBLIC_CONTENT");
     const gen = generation.current;
     setWorking("UPLOADING");
     let cid = form.cid;
@@ -545,6 +565,7 @@ function LaunchFormView() {
         (!isAddress(form.creator) || form.creator === ZeroAddress)
       )
         throw Error("INVALID_ADDRESS");
+      if(isRail && !railReady)throw Error("RAIL_CHECK_REQUIRED");
       if(isPons && form.route==="x" && !payReady) throw Error("X_TAX_CHECK_REQUIRED");
       if (isPons) await checkPonsFunding(config, account, buyTax, form.firstBuy);
       const uploaded = await upload();
@@ -569,7 +590,7 @@ function LaunchFormView() {
         config,
         account,
         setWorking,
-        ["binance", "x"].includes(uploaded.route) && payReady
+        (uploaded.route==="railgun" && railReady) || (["binance", "x"].includes(uploaded.route) && payReady)
           ? payCheck?.ticket
           : undefined,
       );
@@ -601,6 +622,11 @@ function LaunchFormView() {
     setPending(true);
     let confirmed = false;
     try {
+      if (form.route==="railgun"){
+        if(!preview.payTicket || !railReady)throw Error("RAIL_CHECK_REQUIRED");
+        const bound=await railTaxRequest(form,bps(form.railShare||""),{ticket:preview.payTicket,salt:preview.params.salt,token:preview.predicted});
+        if(bound.address!==preview.params.beneficiary)throw Error("RECIPIENT_CHANGED");
+      }
       if (form.route === "x" || form.route === "binance") {
         const checked = await checkRecipient(
           form.social,
@@ -691,7 +717,9 @@ function LaunchFormView() {
   const selectedQuote = quotes.find(
     (x) => x.address.toLowerCase() === form.quote.toLowerCase(),
   );
+  const railSummary=t(`${form.railShare}% of net tax to RAILGUN, ${100-Number(form.railShare)}% to Flap liquidity.`,`净税收的 ${form.railShare}% 用于 RAILGUN 公益，${Number((100-Number(form.railShare)).toFixed(2))}% 用于 Flap 流动性。`);
   const channels = [
+    {id:"railgun",label:t("RAILGUN giving","隐私池公益"),full:t("RAILGUN giving","RAILGUN 公益"),icon:<Shield/>},
     {
       id: "x",
       label: t("X Money", "X Money"),
@@ -731,7 +759,7 @@ function LaunchFormView() {
   ] as const;
   const availableQuotes = quotes.filter(
     (x) =>
-      (filter === "all" || x.category === filter) &&
+      (!isRail || [ZeroAddress,BSC_USDT.toLowerCase()].includes(x.address.toLowerCase())) && (filter === "all" || x.category === filter) &&
       (x.symbol + x.name + x.address)
         .toLowerCase()
         .includes(q.trim().toLowerCase()),
@@ -740,7 +768,7 @@ function LaunchFormView() {
     selectedQuote?.symbol ||
     (form.quote === ZeroAddress ? network.symbol : short(form.quote));
   const needsRecipient = stablePool || form.route === "square";
-  const canPreview =
+  const canPreview = (!isRail || railReady) &&
     (form.route !== "commission" ||
       (Number(form.commissionShare) > 0 &&
         Number(form.commissionShare) <= 100)) &&
@@ -784,7 +812,7 @@ function LaunchFormView() {
     )}</p>
   );
   const shareHint =
-    isPons && form.route === "x" ? t("Pons credits creator fees in ETH. Dark claims them, bridges each batch to Base USDC, then opens the X Money payout.", "Pons 归集创建者费用后，Dark 自动领取 ETH，逐批跨链为 Base USDC，再发起 X Money 付款。")
+    isRail ? railSummary : isPons && form.route === "x" ? t("Pons credits creator fees in ETH. Dark claims them, bridges each batch to Base USDC, then opens the X Money payout.", "Pons 归集创建者费用后，Dark 自动领取 ETH，逐批跨链为 Base USDC，再发起 X Money 付款。")
     : isPons ? t("Pons credits fees to this recipient after a sweep. The recipient can claim ETH from the Pons fee escrow.", "Pons 归集费用后，指定的接收地址可从 Pons 费用托管合约领取 ETH。")
     : form.route === "commission"
       ? t(
@@ -882,6 +910,7 @@ function LaunchFormView() {
             {t("View the creation receipt", "查看创建回执")}
             <ArrowRight size={15} />
           </a>
+          {isRail && <Link className="bags-action" to={"/app/giving-ledger/"+completed.token}>{t("Open public giving ledger","打开公开公益账本")}</Link>}
           {config?.chains[completed.chain].contracts.registry && <button
             className="button primary"
             onClick={() => void register()}
@@ -942,6 +971,7 @@ function LaunchFormView() {
                   )}
             </p>
           )}
+          {isRail && <p>{railSummary} {t("Recipient","收款地址")} <code style={{overflowWrap:"anywhere"}}>{form.social}</code></p>}
           <dl className="review-terms">
             <div>
               <dt>{t("Token", "代币")}</dt>
@@ -962,7 +992,7 @@ function LaunchFormView() {
                       t("Private nomination", "私密受益人提名")
                     : "X · @" +
                       form.social.trim().replace(/^@/, "").toLowerCase()
-                  : form.route === "binance"
+                  : isRail ? "RAILGUN · " + form.railShare + "%" : form.route === "binance"
                     ? "Binance Pay · " + form.social
                     : form.route === "square"
                       ? form.social
@@ -1271,7 +1301,7 @@ function LaunchFormView() {
             <h2 id="issue-share-title">{t("share fees", "分配交易税")}</h2>
             <div className="issue-channels">
               {channels
-                .filter((c) => (isPons ? ["x","wallet"] : form.chain === "base" ? ["x", "wallet"] : ["x", "commission", "wallet"]).includes(c.id))
+                .filter((c) => (isPons ? ["x","wallet"] : form.chain === "base" ? ["x", "wallet"] : ["x", "railgun", "commission", "wallet"]).includes(c.id))
                 .map(({ id, label, full, icon }) => (
                   <button
                     type="button"
@@ -1326,6 +1356,15 @@ function LaunchFormView() {
                 </p>
               )}
             </details>}
+            {isRail && <div className="issue-rail-input">
+              <label>{t("Private RAILGUN receive address","RAILGUN 隐私收款地址")}<input value={form.social} placeholder="0zk1…" autoComplete="off" spellCheck={false} onChange={e=>update("social",e.target.value.trim())}/></label>
+              <label>{t("Giving share of net tax (%)","净税收公益占比（%）")}<input type="number" min=".01" max="100" step=".01" value={form.railShare||""} onChange={e=>update("railShare",e.target.value)}/></label>
+              <p>{railSummary} {t("BNB tax converts to BSC USDT. Every 25 USDT funds one Shield. Dark sponsors settlement gas. RAILGUN deducts its fee from the batch.", "BNB 税收兑换为 BSC USDT，每满 25 USDT 自动存入一次。Dark 代付结算 Gas，隐私池协议费从该批款项中扣除。")}</p>
+              <p>{t("Dark settlement processes and stores the receive address encrypted. The public ledger shows amounts and transaction hashes. Confirm the full address with the recipient.", "Dark 结算服务会处理并加密保存收款地址。公开账本展示金额和交易哈希。请与收款人核对完整地址。")}</p>
+              <button type="button" className="button" disabled={!railEnabled||railChecking||!form.social} onClick={()=>void verifyRail()}>{railReady?t("Address checked","地址已核对"):t("Check receive address","核对收款地址")}</button>
+              {!railEnabled && <p role="status">{t("Automatic settlement is unavailable.","自动结算暂不可用。")}</p>}
+              {railError && <p role="alert">{t("Check the 0zk address, BSC pool and percentage.","请核对 0zk 地址、BSC 底池和公益比例。")} {railError}</p>}
+            </div>}
             {form.route === "commission" && (
               <label>
                 {t(
@@ -1920,7 +1959,7 @@ function LaunchFormView() {
               <dl className="review-terms">
                 <div>
                   <dt>{t("Tax beneficiary", "税收受益人")}</dt>
-                  <dd>{recipientLabel}</dd>
+                  <dd>{isRail ? railSummary+" "+short(form.social):recipientLabel}</dd>
                 </div>
                 <div>
                   <dt>{t("Paired asset", "底池资产")}</dt>

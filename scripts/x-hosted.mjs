@@ -2,5 +2,5 @@
 export const hostedLedger = "/var/lib/darkwork-settlement";
 export const signerStatus = "/run/darkwork-signer/ready.json";
 export function givingPath(path) {
-  return /^\/api\/giving\/(?:capabilities$|nominations(?:\/|$)|x\/)/.test(path);
+  return /^\/api\/giving\/(?:capabilities$|nominations(?:\/|$)|x\/|railgun\/)/.test(path);
 }
