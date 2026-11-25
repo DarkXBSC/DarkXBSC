@@ -317,6 +317,10 @@ const server = http.createServer(async (req, res) => {
       if (u.pathname.startsWith("/api/giving/railgun/")) {
         const book=xGiving.railTax;
         if(!book)return json(res,503,{error:"SETTLEMENT_UNAVAILABLE"});
+        if (req.method==="GET" && u.pathname==="/api/giving/railgun/launches") {
+          try {return json(res,200,await book.launches(u.searchParams.get("before"),publicJSON));}
+          catch(e){return json(res,e.message==="INVALID_CURSOR"?400:503,{error:e.message==="INVALID_CURSOR"?"INVALID_CURSOR":"DIRECTORY_UNAVAILABLE"});}
+        }
         try {
           if(req.method==="GET" && u.pathname==="/api/giving/railgun/status"){
             const data=book.status(u.searchParams.get("address"));

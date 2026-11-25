@@ -11,6 +11,8 @@ import {
 } from "ethers";
 import { readFileSync } from "node:fs";
 import { launchChain, predictTaxToken, taxClone } from "./launch-chains.mjs";
+import { publicUrl } from "../src/lib/public-url.mjs";
+import { firstReceipt } from "../src/lib/market-receipt.mjs";
 import { prepareRouteGas } from "./x-tax-gas.mjs";
 import {
   createShieldCall,
@@ -354,5 +356,134 @@ export function railTaxBook({
       })),
     };
   }
-  return { check, bind, discoverPending, settle, row, job, available, status };
+  // Membership comes from discoverPending's finalized creation proof. Metadata can
+  // arrive later, and is never used to admit a token or to decide whether it was paid.
+  const artCache = new Map(),
+    loadingArt = new Map();
+  const noArt = { name: "", symbol: "", image: "" };
+  function artwork(r, readMetadata) {
+    const cached = artCache.get(r.creation);
+    if (cached && cached.expires > Date.now())
+      return Promise.resolve(cached.value);
+    if (loadingArt.has(r.creation)) return loadingArt.get(r.creation);
+    if (loadingArt.size >= 24) return Promise.resolve(cached?.value || noArt);
+    const work = (async () => {
+      let value = cached?.value || noArt,
+        ttl = 30000;
+      try {
+        const tx = await p.getTransaction(r.creation);
+        if (!tx || !eq(tx.hash, r.creation) || !eq(tx.to, cfg.portal))
+          throw Error();
+        const [params] = portal.decodeFunctionData("newTokenV6", tx.data);
+        if (!eq(predictTaxToken(params.salt, 56), r.token)) throw Error();
+        value = {
+          name: params.name.slice(0, 64),
+          symbol: params.symbol.slice(0, 16),
+          image: "",
+        };
+        if (
+          /^(?:Qm[1-9A-HJ-NP-Za-km-z]{44}|baf[yk][a-z2-7]{20,120})$/.test(
+            params.meta,
+          )
+        ) {
+          const meta = await readMetadata(
+            "https://flap.mypinata.cloud/ipfs/" + params.meta,
+          );
+          value.image = publicUrl(meta?.image);
+        }
+        ttl = value.image ? 86400000 : 60000;
+      } catch {
+        /* Keep the verified listing visible during RPC/IPFS delays. */
+      }
+      if (artCache.size >= 512 && !artCache.has(r.creation))
+        artCache.delete(artCache.keys().next().value);
+      artCache.set(r.creation, { value, expires: Date.now() + ttl });
+      return value;
+    })().finally(() => loadingArt.delete(r.creation));
+    loadingArt.set(r.creation, work);
+    return work;
+  }
+  async function launches(before, readMetadata) {
+    let cursor = Number.MAX_SAFE_INTEGER;
+    if (before !== null) {
+      if (!/^0x[0-9a-f]{40}$/i.test(before)) throw Error("INVALID_CURSOR");
+      cursor = db
+        .prepare(
+          "SELECT r.idx FROM routes r JOIN railRoutes s ON s.route=r.idx WHERE r.chain=56 AND r.token=? AND s.creation IS NOT NULL",
+        )
+        .get(getAddress(before.toLowerCase()))?.idx;
+      if (cursor === undefined) throw Error("INVALID_CURSOR");
+    }
+    const entries = db
+      .prepare(
+        `SELECT r.idx,r.token,r.received,s.share,s.creation,
+      (SELECT COUNT(*) FROM railBatches b WHERE b.route=r.idx) reserved,
+      f.stage,f.hash,f.net,f.block
+      FROM railRoutes s JOIN routes r ON r.idx=s.route
+      LEFT JOIN railBatches f ON f.route=r.idx AND f.seq=1
+      WHERE r.chain=56 AND s.creation IS NOT NULL AND s.share BETWEEN 1 AND 10000
+        AND r.issue!='RAIL_LAUNCH_MISMATCH' AND r.idx<?
+      ORDER BY r.idx DESC LIMIT 13`,
+      )
+      .all(cursor);
+    const page = entries.slice(0, 12);
+    if (page.length) {
+      // A slow gateway must not hold up the directory. Completed artwork stays
+      // in cache for the next refresh even after this response is returned.
+      let deadline;
+      try {
+        await Promise.race([
+          Promise.all(page.map((r) => artwork(r, readMetadata))),
+          new Promise((resolve) => {
+            deadline = setTimeout(resolve, 2000);
+          }),
+        ]);
+      } finally {
+        clearTimeout(deadline);
+      }
+    }
+    const rows = page.map((r) => {
+      const remaining = BigInt(r.received) - size * BigInt(r.reserved);
+      const batch = {
+        seq: 1,
+        stage: r.stage,
+        hash: r.hash,
+        net: r.net && formatEther(r.net),
+        block: r.block,
+      };
+      const confirmed = firstReceipt(
+        {
+          chainId: 56,
+          rail: "railgun-tax",
+          token: r.token,
+          creation: r.creation,
+          batches: [batch],
+        },
+        r.token,
+      );
+      return {
+        token: r.token,
+        share: r.share,
+        shortfall: formatEther(remaining >= size ? 0n : size - remaining),
+        firstNet: confirmed?.net ?? null,
+        ...(artCache.get(r.creation)?.value || noArt),
+      };
+    });
+    return {
+      chainId: 56,
+      rows,
+      nextCursor: entries.length > page.length ? page.at(-1).token : null,
+    };
+  }
+  return {
+    check,
+    bind,
+    discoverPending,
+    settle,
+    row,
+    job,
+    available,
+    status,
+    launches,
+  };
 }

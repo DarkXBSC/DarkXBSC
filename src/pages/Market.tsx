@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Check, Copy, RefreshCw, Star, UsersRound, X } from "lucide-react";
+import GivingLaunches from "../components/GivingLaunches";
 import MarketGiving from "../components/MarketGiving";
 import { CopyText } from "../components/Frame";
 import {
@@ -164,8 +165,9 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
   const chainLabel = chain === "base" ? "Base" : "BSC";
   const query = params.get("q")?.trim() || "";
   const token = params.get("token")?.toLowerCase() || "";
-  const byVolume = params.get("sort") === "volume";
-  const { board, status: boardStatus, reload } = useMarketBoard(true, chain);
+  const giving = !query && !watchlist && chain === "bsc" && params.get("view") === "giving";
+  const byVolume = !giving && params.get("sort") === "volume";
+  const { board, status: boardStatus, reload } = useMarketBoard(!giving, chain);
   const [result, setResult] = useState<{ rows: Asset[]; checkedAt: string }>({
     rows: [],
     checkedAt: "",
@@ -224,7 +226,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
     if (snapshot) {
       openedToken.current = selectionKey;
       inspect(snapshot);
-      return;
+      if (!giving || snapshot.price != null) return;
     }
     // A new launch can earn tax before a market index lists its first pair.
     const receiptSymbol = document.querySelector<HTMLMetaElement>('meta[name="dark:receipt-token"]')?.content === token
@@ -244,12 +246,12 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
         );
         if (r) {
           openedToken.current = selectionKey;
-          inspect(r);
+          inspect(giving && snapshot ? {...r,name:snapshot.name || r.name,symbol:snapshot.symbol || r.symbol,image:snapshot.image || r.image} : r);
         }
       })
       .catch(() => {});
     return () => abort.abort();
-  }, [token, location.state, board.groups, boardStatus, chain]);
+  }, [token, location.state, board.groups, boardStatus, chain, giving]);
   function closeChart() {
     setSelected(null);
     if (token) {
@@ -286,6 +288,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
   };
   function sortByVolume(value: boolean) {
     const next = new URLSearchParams(params);
+    next.delete("view");
     if (value) next.set("sort", "volume");
     else next.delete("sort");
     setParams(next, { replace: true });
@@ -296,11 +299,11 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
   const refresh = () => (query ? setRevision((r) => r + 1) : reload());
   return (
     <div className="bags-trade">
-      <div className="issue-networks" role="group" aria-label={t("Market network", "市场网络")}>{(["bsc", "base"] as const).map(c => <button type="button" key={c} aria-pressed={chain === c} onClick={() => { const next = new URLSearchParams(params); next.set("chain", c); next.delete("token"); next.delete("receipt"); openedToken.current = ""; setSelected(null); dialog.current?.close(); setParams(next); }}>{c === "bsc" ? "BSC" : "Base"}</button>)}</div>
-      <TickerStrip
+      <div className="issue-networks" role="group" aria-label={t("Market network", "市场网络")}>{(["bsc", "base"] as const).map(c => <button type="button" key={c} aria-pressed={chain === c} onClick={() => { const next = new URLSearchParams(params); next.set("chain", c); next.delete("view"); next.delete("token"); next.delete("receipt"); openedToken.current = ""; setSelected(null); dialog.current?.close(); setParams(next); }}>{c === "bsc" ? "BSC" : "Base"}</button>)}</div>
+      {!giving && <TickerStrip
         rows={board.groups.bonded || board.groups.results || []}
         onInspect={inspect}
-      />
+      />}
       <div className="trade-heading board-heading">
         <h1>
           {watchlist
@@ -313,11 +316,11 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
           <div
             className="trade-modes"
             role="group"
-            aria-label={t("Market order", "市场排序")}
+            aria-label={t("Market view", "行情筛选")}
           >
             <button
               type="button"
-              aria-pressed={!byVolume}
+              aria-pressed={!byVolume && !giving}
               onClick={() => sortByVolume(false)}
             >
               {t("New", "最新")}
@@ -333,6 +336,11 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
             >
               {t("Trending", "热门")}
             </button>
+            {chain==="bsc" && <button type="button" aria-pressed={giving} onClick={()=>{
+              const next=new URLSearchParams(params);
+              next.set("chain","bsc");next.set("view","giving");next.delete("sort");
+              setParams(next);
+            }}>{t("Giving launches","公益发行")}</button>}
           </div>
         ) : (
           <Link className="trade-back" to="/app/explore">
@@ -353,7 +361,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
           )}
         </p>
       )}
-      {source === "DEX Screener" && !query && !watchlist && (
+      {giving ? <GivingLaunches/> : <>{source === "DEX Screener" && !query && !watchlist && (
         <p className="trade-note">
           {t(
             `GMGN stages unavailable. Showing ${chainLabel} Flap search results from DEX Screener.`,
@@ -472,6 +480,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
           <Link to="/app/registry">{t("Dark registry", "Dark 登记簿")}</Link>
         </div>
       </div>
+      </>}
       <dialog
         className="market-dialog token-dialog bags-chart-dialog"
         aria-labelledby="bags-chart-title"
