@@ -36,6 +36,7 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-router-dom": "7.18.6",
+    "sharp": "0.34.5",
     "three": "0.187.0",
     "viem": "2.57.10"
   },

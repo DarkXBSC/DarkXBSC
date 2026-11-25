@@ -1,9 +1,10 @@
 import { defineConfig } from "vite";
+import receiptPreview from "./scripts/receipt-preview.mjs";
 import react from "@vitejs/plugin-react";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), receiptPreview()],
   resolve: { alias: [
     { find: /^@railgun-community\/circomlibjs$/, replacement: require.resolve("./src/lib/railgun-poseidon.cjs") },
     { find: /^buffer$/, replacement: require.resolve("buffer/") },

@@ -1,9 +1,10 @@
 import { givingPath } from "./x-hosted.mjs";
+import { createReceiptHandler, receiptRoute } from "./market-receipt.mjs";
 import https from "node:https";
 import http from "node:http";
 import { createSecureContext } from "node:tls";
 import { createReadStream, readFileSync } from "node:fs";
-import { realpath, stat } from "node:fs/promises";
+import { readFile, realpath, stat } from "node:fs/promises";
 import { resolve, extname, sep } from "node:path";
 
 const domain = "darkwork.fun",
@@ -98,6 +99,7 @@ function proxy(req, res, port, hostPort, fallback = false) {
   if (req.readableEnded) up.end();
   else req.pipe(up);
 }
+const serveReceipt = createReceiptHandler({api:"http://127.0.0.1:5367",giving:"http://127.0.0.1:5371",readIndex:()=>readFile(resolve(root,"index.html"),"utf8")});
 const server = https.createServer(
   {
     minVersion: "TLSv1.2",
@@ -133,6 +135,12 @@ const server = https.createServer(
       res.writeHead(308, { Location: "https://" + domain + req.url });
       res.end();
       return;
+    }
+    const receipt=receiptRoute(new URL(req.url,"https://"+domain));
+    if(receipt){
+      if(!["GET","HEAD"].includes(req.method))return end(405);
+      if(!allow(req.headers["cf-connecting-ip"]||"loopback",false))return end(429);
+      return serveReceipt(receipt,req,res);
     }
     if (path.startsWith("/api/")) {
       if (!["GET", "POST"].includes(req.method)) return end(405);

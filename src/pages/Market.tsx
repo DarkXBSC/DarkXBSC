@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Check, Copy, RefreshCw, Star, UsersRound, X } from "lucide-react";
+import MarketGiving from "../components/MarketGiving";
 import { CopyText } from "../components/Frame";
 import {
   type Asset,
@@ -199,13 +200,20 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
   function inspect(r: Asset) {
     setSelected(r);
     dialog.current?.showModal();
+    if (r.address.toLowerCase() !== token) {
+      const next = new URLSearchParams(params);
+      next.set("token",r.address.toLowerCase());
+      next.delete("receipt");
+      setParams(next,{replace:true,state:{tickerAsset:r}});
+    }
   }
   useEffect(() => {
     if (!token) {
       openedToken.current = "";
       return;
     }
-    if (openedToken.current === token || !/^0x[\da-f]{40}$/.test(token)) return;
+    const selectionKey = chain + ":" + token;
+    if (openedToken.current === selectionKey || !/^0x[\da-f]{40}$/.test(token)) return;
     const carried = location.state?.tickerAsset as Asset | undefined;
     const snapshot =
       (carried?.chain || "bsc") === chain && carried?.address.toLowerCase() === token
@@ -214,11 +222,18 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
             .flat()
             .find((r) => r.address.toLowerCase() === token);
     if (snapshot) {
-      openedToken.current = token;
+      openedToken.current = selectionKey;
       inspect(snapshot);
       return;
     }
-    if (boardStatus === "loading") return;
+    // A new launch can earn tax before a market index lists its first pair.
+    const receiptSymbol = document.querySelector<HTMLMetaElement>('meta[name="dark:receipt-token"]')?.content === token
+      ? document.querySelector<HTMLMetaElement>('meta[name="dark:receipt-symbol"]')?.content : "";
+    setSelected(current => current?.address.toLowerCase() === token && (current.chain || "bsc") === chain ? current : {
+      address:token,chain,symbol:receiptSymbol || short(token),name:"",image:"",price:null,marketCap:null,
+      volume:null,liquidity:null,change:null,createdAt:null,dex:"",url:"",buys:null,sells:null
+    });
+    dialog.current?.showModal();
     const abort = new AbortController();
     fetch("/api/market?query=" + token + "&chain=" + chain, { signal: abort.signal })
       .then((r) => (r.ok ? r.json() : null))
@@ -228,7 +243,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
           (asset: Asset) => asset.address.toLowerCase() === token,
         );
         if (r) {
-          openedToken.current = token;
+          openedToken.current = selectionKey;
           inspect(r);
         }
       })
@@ -240,6 +255,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
     if (token) {
       const next = new URLSearchParams(params);
       next.delete("token");
+      next.delete("receipt");
       setParams(next, { replace: true, state: null });
     }
   }
@@ -280,7 +296,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
   const refresh = () => (query ? setRevision((r) => r + 1) : reload());
   return (
     <div className="bags-trade">
-      <div className="issue-networks" role="group" aria-label={t("Market network", "市场网络")}>{(["bsc", "base"] as const).map(c => <button type="button" key={c} aria-pressed={chain === c} onClick={() => { const next = new URLSearchParams(params); next.set("chain", c); next.delete("token"); openedToken.current = ""; setSelected(null); dialog.current?.close(); setParams(next); }}>{c === "bsc" ? "BSC" : "Base"}</button>)}</div>
+      <div className="issue-networks" role="group" aria-label={t("Market network", "市场网络")}>{(["bsc", "base"] as const).map(c => <button type="button" key={c} aria-pressed={chain === c} onClick={() => { const next = new URLSearchParams(params); next.set("chain", c); next.delete("token"); next.delete("receipt"); openedToken.current = ""; setSelected(null); dialog.current?.close(); setParams(next); }}>{c === "bsc" ? "BSC" : "Base"}</button>)}</div>
       <TickerStrip
         rows={board.groups.bonded || board.groups.results || []}
         onInspect={inspect}
@@ -500,7 +516,7 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
                 </button>
               </div>
             </div>
-            <Suspense
+            <div className="market-chart-columns"><div className="market-chart-plot"><Suspense
               fallback={
                 <div className="chart-message">
                   {t("Loading chart…", "载入图表…")}
@@ -508,7 +524,8 @@ export default function Market({ watchlist = false }: { watchlist?: boolean }) {
               }
             >
               <CandleChart chain={chain} address={selected.address} />
-            </Suspense>
+            </Suspense></div>
+            {chain==="bsc" && selected.chain!=="base" && <MarketGiving key={selected.address.toLowerCase()} token={selected.address.toLowerCase()}/>}</div>
             <dl className="token-metrics">
               {[
                 [t("Price", "价格"), usd(selected.price)],

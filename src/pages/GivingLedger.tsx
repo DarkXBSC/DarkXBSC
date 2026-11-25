@@ -5,37 +5,8 @@ import { useApp } from "../lib/context";
 import { CopyText } from "../components/Frame";
 import "./giving-ledger.css";
 
-type Batch = {
-  seq: number;
-  stage: string;
-  hash: string | null;
-  net: string | null;
-  fee: string | null;
-  gross: string;
-  block: number | null;
-};
-type Ledger = {
-  rail: string;
-  chainId: number;
-  token: string;
-  collector: string;
-  share: number;
-  creation: string | null;
-  lastBlock: number;
-  received: string;
-  available: string;
-  threshold: string;
-  shortfall: string;
-  shielded: string;
-  issue: string;
-  stage: string;
-  batches: Batch[];
-  conversion?: {
-    earned: string;
-    remaining: string;
-    last?: { hash: string; actual: string; stage: string };
-  };
-};
+import type { GivingLedgerData as Ledger } from "../lib/market-receipt.mjs";
+
 const issues: Record<string, [string, string]> = {
   RAIL_LAUNCH_MISMATCH: [
     "Launch parameters did not match this reservation. Settlement is paused.",

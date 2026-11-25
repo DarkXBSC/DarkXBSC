@@ -602,3 +602,27 @@
     height: 60px;
   }
 }
+
+.bags-chart-dialog:has(.market-giving) {width:min(1140px,94vw)}
+.market-chart-columns:has(.market-giving) {display:grid;grid-template-columns:minmax(0,1fr) minmax(224px,26%);gap:24px;align-items:start}
+.market-chart-plot {min-width:0}
+.market-giving {margin-top:12px;border-left:1px solid var(--line);padding:4px 0 4px 22px;min-width:0}
+.market-giving header small, .market-giving dt, .giving-gap > span,.market-giving .giving-pending {color:var(--muted);font-size:12px}
+.market-giving header small {letter-spacing:.08em;font-weight:700}
+.market-giving h3 {margin:4px 0 16px;font-size:22px;letter-spacing:-.035em}
+.giving-gap {display:grid;gap:5px}
+.giving-gap strong {font-size:25px;line-height:1.15;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.giving-gap small {font-size:13px}
+.giving-gap progress {width:100%;height:5px;appearance:none;border:0;border-radius:3px;overflow:hidden;background:var(--line);accent-color:var(--text)}
+.giving-gap progress::-webkit-progress-bar {background:var(--line)}
+.giving-gap progress::-webkit-progress-value {background:var(--text)}
+.giving-gap progress::-moz-progress-bar {background:var(--text)}
+.market-giving dl {margin:12px 0}
+.market-giving dl div, .giving-first > div {display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.market-giving dl div {padding:3px 0}
+.market-giving dd {margin:0;text-align:right;font-size:13px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.giving-first {border-top:1px solid var(--line);padding-top:12px;font-size:13px}
+.giving-first p {margin:3px 0 9px}
+.market-giving a, .market-giving button {text-decoration:underline;text-underline-offset:3px;font-size:12px}
+.market-giving .giving-x {display:block;padding:8px;border-radius:8px;text-align:center;margin-bottom:9px;font-weight:700;text-decoration:none;background:var(--text);color:var(--panel)}
+.market-giving .giving-ledger-link {display:inline-block;margin-top:10px}
